@@ -1,0 +1,62 @@
+LOCUS       CAU05876                7413 bp    RNA     linear   VRL 14-OCT-1994
+DEFINITION  coxsackievirus A16 G-10, complete genome.
+ACCESSION   U05876
+VERSION     U05876.1
+KEYWORDS    .
+SOURCE      Coxsackievirus A16 (CV-A16)
+  ORGANISM  Coxsackievirus A16
+            Viruses; Riboviria; Orthornavirae; Pisuviricota; Pisoniviricetes;
+            Picornavirales; Picornaviridae; Ensavirinae; Enterovirus;
+            Enterovirus A.
+REFERENCE   1  (bases 1 to 7413)
+  AUTHORS   Poyry,T., Hyypia,T., Horsnell,C., Kinnunen,L., Hovi,T. and
+            Stanway,G.
+  TITLE     Molecular analysis of coxsackievirus A16 reveals a new genetic group
+            of enteroviruses
+  JOURNAL   Virology 202 (2), 982-987 (1994)
+   PUBMED   8030260
+REFERENCE   2  (bases 1 to 7413)
+  AUTHORS   Poyry,T.
+  TITLE     Direct Submission
+  JOURNAL   Submitted (31-JAN-1994) Tuija Poyry, Enterovirus laboratory,
+            National Public Health Institute, Mannerheimintie 166, Helsinki
+            00300, Finland
+FEATURES             Location/Qualifiers
+     source          1..891
+                     /organism="Coxsackievirus A16"
+                     /mol_type="genomic RNA"
+                     /strain="G-10"
+                     /host="Homo sapiens"
+                     /db_xref="taxon:31704"
+     gene            <1..>891
+                     /gene="VP1"
+     CDS             <1..>891
+                     /ID="id-AAA50478.1:566..862"
+                     /gbkey="Prot"
+                     /product="VP1"
+                     /codon_start=1
+                     /Name="VP1"
+                     /locus_tag="VP1"
+                     /translation="GDGIADMIDQAVTSRVGRALTSLQVEPTAANTNASEHRLGTGLV
+                     PALQAAETGASSNAQDENLIETRCVLNHHSTQETTIGNFFSRAGLVSIITMPTTGTQN
+                     TDGYVNWDIDLMGYAQMRRKCELFTYMRFDAEFTFVAAKPNGELVPQLLQYMYVPPGA
+                     PKPTSRDSFAWQTATNPSIFVKLTDPPAQVSVPFMSPASAYQWFYDGYPTFGAHPQSN
+                     DADYGQCPNNMMGTFSIRTVGTEKSPHSITLRVYMRIKHVRAWIPRPLRNQPYLFKTN
+                     PNYKGNDIKCTSTSRDKITTL"
+ORIGIN
+        1 ggtgatggaa ttgcagacat gattgaccag gctgtcactt cccgagttgg tcgtgcgctg
+       61 acatccttac aggtagaacc taccgccgcc aacaccaatg ctagtgagca cagattgggc
+      121 accgggctcg tccccgcctt gcaggctgca gagaccggcg cctcttctaa tgcacaggat
+      181 gagaatctta tagaaacccg gtgtgtgttg aaccatcact ccactcaaga gaccacgatt
+      241 ggcaactttt tcagtcgagc aggactagtg agtattatta ccatgcccac cacaggtacc
+      301 caaaacaccg atgggtatgt gaactgggat attgacttga tgggttatgc tcaaatgagg
+      361 cgtaagtgtg agctattcac atacatgcgc tttgatgcag agtttacatt tgtagctgcc
+      421 aaaccaaacg gtgagctagt accacaattt gttgcagtac atgtatgtgc ctcccggagc
+      481 tccaaaacct acgtcccggg attcctttgc ctggcagact gctaccaatt cttccatctt
+      541 cgtcaagttg actgaccccc cggcacaagt gtcagtaccc ttcatgtctc ccgccagcgc
+      601 ctaccagtgg ttttacgatg gctatccaac gtttggagcc catccacaat cgaatgacgc
+      661 agactatggc caatgtccaa acaacatgat gggcaccttt agcatcagaa ctgtaggcac
+      721 tgagaaatcc cccattctat cacccttcgg gtgtatatga gaatcaagca tgtcagggcc
+      781 tggatacccc ggcctctcag aaaccaacca taccttttta agacaaatcc aaattataa
+      841 aggcaacgac atcaaatgca ccagcacaag tagggacaaa ataacaacac ta
+//

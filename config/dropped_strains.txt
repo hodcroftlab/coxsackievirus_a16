@@ -1,0 +1,12 @@
+U05876 #reference strain G-10
+
+#very high diversity (genotype A)
+OQ607171
+JQ746659
+EU812514
+JQ315094
+
+#CVA10 (wrong organism label in GenBank)
+LT617118
+LT617117
+LT617116
