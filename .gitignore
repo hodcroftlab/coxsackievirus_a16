@@ -1,8 +1,8 @@
 .snakemake
 
-
 data/*
 auspice/
+nextstrain_upload/
 
 *errors.csv
 
