@@ -20,18 +20,72 @@ B1	nuc	577	C
 B1	nuc	429	T
 B1	nuc	804	T
 
+B1.1	nuc	126	C
+B1.1	nuc	792	A
+B1.1	nuc	852	C
+B1.1	VP1	160	S
+
 B1a	clade	B1
 B1a	nuc	318	C
 
+B1a.1	clade	B1a
+B1a.1	nuc	411	C
+B1a.1	nuc	589	G
+B1a.1	nuc	843	G
+B1a.1	VP1	197	A
+
+B1a.2	clade	B1a
+B1a.2	nuc	517	A
+
+B1a.3	nuc	363	C
+B1a.3	nuc	709	A
+B1a.3	nuc	843	G
+B1a.3	VP1	238	C
+
+B1a.4	clade	B1a.3
+B1a.4	nuc	889	T
+
 B1b	clade	B1
-B1b	nuc	60	G
-B1b	nuc	276	C
+B1b	nuc	39	C
+B1b	nuc	93	C
+B1b	nuc	336	C
+
+B1b.1	clade	B1b
+B1b.1	nuc	369	T
+
+B1b.2	nuc	267	T
+B1b.2	nuc	792	A
+B1b.2	VP1	158	T
+
+B1b.3	nuc	601	T
+B1b.3	VP1	201	L
+
+B1b.4	nuc	888	G
+
+B1b.5	nuc	661	G
+B1b.5	nuc	670	T
+B1b.5	VP1	224	S
 
 B1c	nuc	126	C
 B1c	nuc	186	C
 B1c	nuc	825	T
 
-B1c.A	clade	B1c
-B1c.A	nuc	144	G
-B1c.A	nuc	396	C
-B1c.A	nuc	867	A
+B1c.1	clade	B1c
+B1c.1	nuc	330	T
+B1c.1	nuc	532	G
+B1c.1	nuc	879	A
+
+B1c.2	nuc	505	A
+B1c.2	nuc	634	T
+B1c.2	nuc	727	G
+B1c.2	VP1	212	W
+
+B1c.3	nuc	366	C
+B1c.3	nuc	682	C
+B1c.3	nuc	885	G
+B1c.3	VP1	228	Q
+
+B1c.4	nuc	207	A
+B1c.4	nuc	373	C
+B1c.4	nuc	724	A
+B1c.4	VP1	242	K

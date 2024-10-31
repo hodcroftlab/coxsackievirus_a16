@@ -20,3 +20,5 @@ scripts/bin
 scripts/__pycache__
 
 .env
+
+Simplot

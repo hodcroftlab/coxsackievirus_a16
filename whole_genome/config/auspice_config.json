@@ -1,7 +1,8 @@
 {
   "title": "Genomic epidemiology of Coxsackievirus A16 Whole Genome",
   "maintainers": [
-    {"name": "Nadia Neuner-Jehle", "url": "https://www.swisstph.ch/en/staff/profile/people/nadia-neuner-jehle"}
+    {"name": "Nadia Neuner-Jehle", "url": "https://www.swisstph.ch/en/staff/profile/people/nadia-neuner-jehle"},
+    {"name": "Emma Hodcroft", "url": "https://www.emmahodcroft.com/"}
   ],
   "data_provenance": [
     {
