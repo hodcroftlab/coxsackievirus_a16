@@ -2,10 +2,10 @@
 # Snakemake execution templates:
 
 # To run a default VP1 run(<600bp):
-# snakemake  vp1/auspice/cva16_vp1.json --cores 1
+# snakemake  vp1/auspice/coxsackievirus_A16_vp1.json --cores 1
 
 # To run a default whole genome run ( <6400bp):
-# snakemake whole_genome/auspice/cva16_whole_genome.json --cores 1
+# snakemake whole_genome/auspice/coxsackievirus_A16_whole_genome.json --cores 1
 
 ###############
 wildcard_constraints:
@@ -21,11 +21,11 @@ GENES=["-5utr","-vp4", "-vp2", "-vp3", "-vp1", "-2A", "-2B", "-2C", "-3A", "-3B"
 # Expand augur JSON paths
 rule all:
     input:
-        augur_jsons = expand("auspice/cva16_{segs}.json", segs=segments)
+        augur_jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
 
 rule all_genes:
     input:
-        augur_jsons = expand("auspice/cva16_whole_genome{genes}.json", genes=GENES)
+        augur_jsons = expand("auspice/coxsackievirus_A16_whole_genome{genes}.json", genes=GENES)
 
 
 # Rule to handle configuration files
@@ -616,8 +616,8 @@ rule export:
     params:
         strain_id_field= "accession"
     output:
-        auspice_json = "auspice/cva16_{seg}{gene}-accession.json"
-        # auspice_json="auspice/cva16_{seg}-accession.json"
+        auspice_json = "auspice/coxsackievirus_A16_{seg}{gene}-accession.json"
+        # auspice_json="auspice/coxsackievirus_A16_{seg}-accession.json"
         
     shell:
         """
@@ -642,8 +642,8 @@ rule rename_json:
         auspice_json= rules.export.output.auspice_json,
         metadata = rules.add_metadata.output.metadata,
     output:
-        # auspice_json="auspice/cva16_{seg}.json"
-        auspice_json="auspice/cva16_{seg}{gene}.json"
+        # auspice_json="auspice/coxsackievirus_A16_{seg}.json"
+        auspice_json="auspice/coxsackievirus_A16_{seg}{gene}.json"
     params:
         strain_id_field="accession",
         display_strain_field= "strain"
@@ -672,9 +672,9 @@ rule rename_whole_genome:
     message: 
         "Rename whole-genome built"
     input: 
-        json="auspice/cva16_whole_genome.json"
+        json="auspice/coxsackievirus_A16_whole_genome.json"
     output:
-        json="auspice/cva16_whole-genome.json" # easier view in auspice
+        json="auspice/coxsackievirus_A16_whole-genome.json" # easier view in auspice
     shell:
         """
         mv {input.json} {output.json}
