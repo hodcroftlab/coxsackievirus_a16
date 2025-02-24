@@ -49,7 +49,7 @@ files = rules.files.input
 ##############################
 # Download from NBCI Virus with ingest snakefile
 ###############################
-
+# rm ingest/data/* data/sequences.fasta data/metadata.tsv
 rule fetch:
     input:
         dir = "ingest"
@@ -75,16 +75,20 @@ rule fetch:
 rule update_strain_names:
     message:
         """
-        Updating strain information in metadata.
+        Updating strain name in metadata.
         """
     input:
         file_in =  files.meta
+    params:
+        backup = "data/strain_names_previous_run.tsv"
     output:
         file_out = "data/updated_strain_names.tsv"
     shell:
         """
-        time bash scripts/update_strain.sh {input.file_in} {output.file_out}
+        time bash scripts/update_strain.sh {input.file_in} {params.backup} {output.file_out}
+        cp -i {output.file_out} {params.backup}
         """
+
 
 ##############################
 # Add additional sequences
