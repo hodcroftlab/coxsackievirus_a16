@@ -107,7 +107,9 @@ rule update_sequences:
         """
         touch {params.temp} && rm {params.temp}
         cat {params.file_ending} > {params.temp}
-        python scripts/update_sequences.py --in_seq {params.temp} --out_seq {output.sequences} --dates {params.date_last_updated} --local_accession {params.local_accn} --meta {input.metadata} --add {input.add_metadata}
+        python scripts/update_sequences.py --in_seq {params.temp} --out_seq {output.sequences} --dates {params.date_last_updated} \
+        --local_accession {params.local_accn} --meta {input.metadata} --add {input.add_metadata} \
+        --ingest_seqs {input.sequences}
         rm {params.temp}
         awk '/^>/{{if (seen[$1]++ == 0) print; next}} !/^>/{{print}}' {output.sequences} > {params.temp} && mv {params.temp} {output.sequences}
         """
@@ -123,9 +125,9 @@ rule blast:
         blast_db_file = "data/references/reference_vp1_blast.fasta",
         seqs_to_blast = rules.update_sequences.output.sequences
     output:
-        blast_out = "vp1/temp/blast_out.csv"
+        blast_out = "temp/blast_out.csv"
     params:
-        blast_db = "vp1/temp/entero_db_vp1"
+        blast_db = "temp/blast_database"
     shell:
         """
         sed -i 's/-//g' {input.seqs_to_blast}
@@ -247,6 +249,12 @@ rule add_metadata:
             --regions {input.regions} \
             --id {params.strain_id_field} \
             --output {output.metadata}
+
+
+        if [ -d "./temp/" ]; then
+        rm -r ./temp/
+        fi
+
         """
 
 ##############################
