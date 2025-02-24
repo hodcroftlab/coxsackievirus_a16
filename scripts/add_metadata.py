@@ -40,7 +40,8 @@ if __name__ == '__main__':
     meta = pd.read_csv(input_csv_meta, keep_default_na=True, sep='\t', index_col=False)
     new_data = pd.read_csv(add_data, keep_default_na=True, sep='\t', index_col=False)
     local_accn_file= pd.read_csv(local_accn, keep_default_na=True, sep='\t', index_col=False)
-    renamed_strains_df = pd.read_csv(renamed_strains, sep='\t', index_col=False)
+    renamed_strains_df = pd.read_csv(renamed_strains, keep_default_na=True, sep='\t',
+                                     index_col=False, on_bad_lines='skip',names=['accession','strain'])
     last_updated=pd.read_csv(last_updated_file, keep_default_na=True, sep='\t', index_col=False,names=["accession","date_added"])
 
     # Identify records that need updating
