@@ -25,7 +25,7 @@ rule all:
 
 rule all_genes:
     input:
-        augur_jsons = expand("auspice/coxsackievirus_A16_whole_genome{genes}.json", genes=GENES)
+        augur_jsons = expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES)
 
 
 # Rule to handle configuration files
@@ -687,6 +687,18 @@ rule rename_whole_genome:
         json="auspice/coxsackievirus_A16_whole_genome.json"
     output:
         json="auspice/coxsackievirus_A16_whole-genome.json" # easier view in auspice
+    shell:
+        """
+        mv {input.json} {output.json}
+        """
+
+rule rename_genes:
+    message: 
+        "Rename the single genome builts"
+    input: 
+        json="auspice/coxsackievirus_A16_whole_genome{gene}.json"
+    output:
+        json="auspice/coxsackievirus_A16_gene_{gene}.json" # easier view in auspice
     shell:
         """
         mv {input.json} {output.json}

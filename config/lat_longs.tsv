@@ -1,6 +1,6 @@
 region	northern africa	28.0000	13.0000
 region	western africa	11.0000	-4.0000
-region	middle africa	0.0000	23.0000
+region	central africa	0.0000	23.0000
 region	eastern africa	0.0000	38.0000
 region	southern africa	-28.479262	24.672713
 
@@ -446,6 +446,7 @@ place	Maharashtra	19.7515	75.7139
 place	Mumbai	19.0760	72.8777
 place	Odisha	20.9517	85.0985
 place	Kandaldal	17.5155	76.9571
+place	Kerala State	10.850516	76.271080
 
 country	japan	35.68536	139.75309
 place	Aichi	35.1802	136.9066
