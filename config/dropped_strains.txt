@@ -16,3 +16,9 @@ AB465366
 
 # swine vesicular disease virus SVDV-specific sequence
 S79977
+
+# mouse
+MG586908
+MG586907
+MG586906
+MG586905
