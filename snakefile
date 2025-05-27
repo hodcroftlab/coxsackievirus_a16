@@ -307,7 +307,7 @@ rule filter:
             --group-by {params.group_by} \
             --sequences-per-group {params.sequences_per_group} \
             --min-date {params.min_date} \
-            --output {output.sequences}\
+            --output-sequences {output.sequences}\
             --output-log {output.reason}
         """
 
