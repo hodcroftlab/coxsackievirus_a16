@@ -99,11 +99,13 @@
     },
     {
       "key": "has_age",
-      "title": "Age available"
+      "title": "Age available",
+      "type": "boolean"
     },
     {
       "key": "has_diagnosis",
-      "title": "Diagnosis available"
+      "title": "Diagnosis available",
+      "type": "boolean"
     },
     {
       "key": "author",

@@ -21,16 +21,6 @@ wildcard_constraints:
 segments = ['vp1', 'whole-genome']
 GENES=["-5utr","-vp4", "-vp2", "-vp3", "-vp1", "-2A", "-2B", "-2C", "-3A", "-3B", "-3C", "-3D","-3utr"]
 
-# Expand augur JSON paths
-rule all:
-    input:
-        augur_jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
-
-rule all_genes:
-    input:
-        augur_jsons = expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES)
-
-
 # Rule to handle configuration files
 rule files:
     input:
@@ -44,34 +34,43 @@ rule files:
         colors =            "config/colors.tsv",
         clades =            "{seg}/config/clades_genome.tsv",
         regions=            "config/geo_regions.tsv",
-        meta=               "data/metadata.tsv",
         extended_metafile=  "data/meta_public.tsv",
         meta_collab =       "data/meta_collab.tsv",
         last_updated_file = "data/date_last_updated.txt",
-        local_accn_file =   "data/local_accn.txt"
+        local_accn_file =   "data/local_accn.txt",
+        SEQUENCES =         "data/sequences.fasta",
+        METADATA =          "data/metadata.tsv"
 
 files = rules.files.input
+
+# Expand augur JSON paths
+rule all:
+    input:
+        augur_jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments),
+        meta = files.METADATA,
+        seq = files.SEQUENCES
+
+rule all_genes:
+    input:
+        augur_jsons = expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES),
+        meta = files.METADATA,
+        seq = files.SEQUENCES
+
 
 ##############################
 # Download from NBCI Virus with ingest snakefile
 ###############################
-# rm ingest/data/* data/sequences.fasta data/metadata.tsv
 rule fetch:
     input:
         dir = "ingest"
     output:
-        sequences="data/sequences.fasta",
-        metadata=files.meta
-    params:
-        seq="ingest/data/sequences.fasta",
-        meta="ingest/data/metadata.tsv"
+        sequences=files.SEQUENCES,
+        metadata=files.METADATA
     shell:
         """
         cd {input.dir} 
         snakemake --cores 9 all
         cd ../
-        cp -u {params.seq} {output.sequences}
-        cp -u {params.meta} {output.metadata}
         """
 
 ##############################
@@ -84,7 +83,7 @@ rule update_strain_names:
         Updating strain name in metadata.
         """
     input:
-        file_in =  files.meta
+        file_in =  files.METADATA
     params:
         backup = "data/strain_names_previous_run.tsv"
     output:
@@ -92,7 +91,7 @@ rule update_strain_names:
     shell:
         """
         time bash scripts/update_strain.sh {input.file_in} {params.backup} {output.file_out}
-        cp -i {output.file_out} {params.backup}
+        cp {output.file_out} {params.backup}
         """
 
 ##############################
@@ -153,8 +152,8 @@ rule curate:
 
 rule update_sequences:
     input:
-        sequences = "data/sequences.fasta",
-        metadata=files.meta,
+        sequences = files.SEQUENCES,
+        metadata=files.METADATA,
         extra_metadata = rules.curate.output.meta
     output:
         sequences = "data/all_sequences.fasta"
@@ -226,7 +225,7 @@ rule add_metadata:
         Cleaning data in metadata
         """
     input:
-        metadata=files.meta,
+        metadata=files.METADATA,
         new_data=rules.curate.output.meta,
         regions=ancient(files.regions),
         renamed_strains=rules.update_strain_names.output.file_out
@@ -247,11 +246,7 @@ rule add_metadata:
             --regions {input.regions} \
             --id {params.strain_id_field} \
             --output {output.metadata}
-        
-        if [ -d "./temp/" ]; then
-        rm -r ./temp/
-        fi
-        """
+            """
 
 ##############################
 # Rest of the augur pipeline
@@ -455,9 +450,9 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 3, # was 3
+        clock_filter_iqd = 6, # was 3
         strain_id_field =config["id_field"],
-        clock_rate = 0.004, # remove for estimation
+        clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
         # clock_rate_string = lambda wildcards: f"--clock-rate 0.004 --clock-std-dev 0.0015" if wildcards.gene or wildcards.quart else ""
     shell:
@@ -651,14 +646,6 @@ rule export:
 
 
 # ##############################
-rule clean:
-    message: "Removing directories: {params}"
-    params:
-        # "results ",
-        "auspice"
-    shell:
-        "rm -rfv {params}"
-
 
 rule rename_whole_genome:
     message: 
@@ -683,3 +670,21 @@ rule rename_genes:
         """
         mv {input.json} {output.json}
         """
+
+rule clean:
+    message: "Removing directories: {params}"
+    params:
+        "*/results/*",
+        "auspice/*",
+        "ingest/data/*",
+        "temp/*",
+        files.METADATA,
+        files.SEQUENCES,
+        "data/updated_strain_names.tsv",
+        "data/curated/",
+        "data/all_sequences.fasta",
+        "data/all_metadata.tsv",
+        "data/final_metadata.tsv"
+
+    shell:
+        "rm {params}"
