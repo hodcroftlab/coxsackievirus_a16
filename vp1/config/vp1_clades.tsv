@@ -1,0 +1,83 @@
+clade	gene	site	alt
+A	VP1	139	V
+A	nuc	131	T
+
+B	nuc	129	G
+B	nuc	156	T
+B	nuc	177	A
+B	nuc	577	A
+
+B2	nuc	348	C
+B2	nuc	469	T
+B2	nuc	780	G
+B2	nuc	825	T
+B2	VP1	157	S
+
+B1	VP1	193	P
+B1	nuc	577	C
+
+B1a	clade	B1
+B1a	nuc	318	C
+
+
+B1b	clade	B1
+B1b	nuc	3	T
+B1b	VP1	3	P
+
+
+B1c	nuc	126	C
+B1c	nuc	186	C
+B1c	nuc	825	T
+
+B1.1	nuc	126	C
+B1.1	nuc	792	A
+B1.1	nuc	852	C
+B1.1	VP1	160	S
+
+B1a.1	clade	B1a
+B1a.1	nuc	879	A
+
+B1a.2	clade	B1a
+B1a.2	nuc	355	T
+
+B1a.3	clade	B1a
+B1a.3	nuc	889	T
+
+B1b.2	clade	B1b
+B1b.2	nuc	276	T
+B1b.2	nuc	661	G
+
+B1b.1	nuc	267	T
+B1b.1	nuc	792	A
+B1b.1	VP1	158	T
+
+B1b.3	nuc	601	T
+B1b.3	VP1	201	L
+
+B1b.4	nuc	888	G
+
+B1b.5	nuc	18	C
+
+B1b.6	clade	B1b.4
+B1b.6	nuc	628	T
+B1b.6	VP1	210	Y
+
+B1c.1	clade	B1c
+B1c.1	nuc	330	T
+B1c.1	nuc	532	G
+B1c.1	nuc	879	A
+
+B1c.2	nuc	255	T
+B1c.2	nuc	435	A
+B1c.2	nuc	735	T
+B1c.2	VP1	201	V
+
+B1c.3	nuc	366	G
+B1c.3	nuc	682	C
+B1c.3	nuc	885	G
+B1c.3	VP1	228	Q
+
+B1c.4	nuc	207	A
+B1c.4	nuc	373	C
+B1c.4	nuc	724	A
+B1c.4	VP1	242	K

@@ -34,7 +34,7 @@ rule files:
         colors =            "config/colors.tsv",
         clades =            "{seg}/config/clades_genome.tsv",
         regions=            "config/geo_regions.tsv",
-        extended_metafile=  "data/meta_public.tsv",
+        meta_public=        "data/meta_public.tsv",
         meta_collab =       "data/meta_collab.tsv",
         last_updated_file = "data/date_last_updated.txt",
         local_accn_file =   "data/local_accn.txt",
@@ -105,7 +105,7 @@ rule curate:
         Cleaning up metadata with augur curate
         """
     input:
-        metadata=files.extended_metafile,  # Path to input metadata file
+        metadata=files.meta_public,  # Path to input metadata file
         meta_collab = files.meta_collab  # Data shared with us by collaborators
     params:
         strain_id_field=config["id_field"],
@@ -519,7 +519,7 @@ rule clades:
         tree=rules.refine.output.tree,
         aa_muts = rules.translate.output.node_data,
         nuc_muts = rules.ancestral.output.node_data,
-        clades = files.clades
+        clades = files.clades #"vp1/config/vp1_clades.tsv" 
     output:
         # clade_data = "{seg}/results/clades.json"
         clade_data = "{seg}/results/clades{gene}.json"
@@ -608,6 +608,9 @@ rule clade_published:
         merged_df = merged_df.drop(columns=["l_vp1"])
 
         final_meta = pd.merge(merged_df, rivm_subtypes, on=params.strain_id_field, how='left')
+
+        # add url with genbank accession
+        final_meta['url'] = "https://www.ncbi.nlm.nih.gov/nuccore/" + final_meta['accession']
         
         # Save the merged dataframe to the output file
         final_meta.to_csv(output.final_metadata, sep="\t", index=False)
@@ -681,10 +684,11 @@ rule clean:
         files.METADATA,
         files.SEQUENCES,
         "data/updated_strain_names.tsv",
-        "data/curated/",
+        "data/curated/*",
         "data/all_sequences.fasta",
         "data/all_metadata.tsv",
-        "data/final_metadata.tsv"
+        "data/final_metadata.tsv",
+        "logs/*",
 
     shell:
         "rm {params}"

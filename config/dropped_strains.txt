@@ -14,6 +14,8 @@ LT617116
 # high divergence
 AB465366
 KU163608
+OQ626408
+OL470926
 
 # swine vesicular disease virus SVDV-specific sequence
 S79977
