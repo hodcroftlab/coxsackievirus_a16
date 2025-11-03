@@ -107,18 +107,45 @@ if __name__ == '__main__':
     new_meta['subgenogroup'] = new_meta['subgenogroup'].mask(new_meta['subgenogroup'].isna(), new_meta['clade'])
 
     # Isolation source: standardize
-    # Function to map non-standard terms to standard terms
-    def standardize_isolation_source(value):
-        # Add mappings for non-standard terms to standard terms
-        mapping = config['metadata']['isolation_source']
-        
-        val=mapping.get(value, value)
-        if pd.isna(val):
-            return val
-        val=val.title()
+    # Define a mapping for full terms to their abbreviations and standardized names
+    isolation_version = config['metadata']['isolation_source']
+    isolation_forms = set(isolation_version.values())
 
-        # Return the mapped value if it exists, otherwise return the original value
-        return val
+    # Function to map non-standard terms to standard terms
+    def standardize_isolation_source(isolation, threshold=75):
+        if pd.isna(isolation):
+            return np.nan
+
+        # Normalize delimiters
+        clean_isolation = (isolation.replace(',', ';')
+                                    .replace(' or ', ';')
+                                    .replace('/', ';')
+                                    .replace('  ', ' ')
+                                    .strip('; '))
+
+        # Split on delimiters
+        isolations = [iso.strip() for iso in clean_isolation.split(';') if iso.strip()]
+
+        standardized_isolation = []
+        for iso in isolations:
+            iso_lower = iso.lower()
+
+            # Exact match first
+            if iso_lower in isolation_version:
+                standardized_isolation.append(isolation_version[iso_lower])
+            else:
+                # Fuzzy match
+                match = process.extractOne(iso_lower, isolation_version.keys(), score_cutoff=threshold)
+                if match:
+                    standardized_isolation.append(isolation_version[match[0]])
+                else:
+                    # Keep as title-case or classify as Other
+                    standardized_isolation.append(iso.lower())
+
+        # Deduplicate and sort
+        standardized_isolation = sorted(set(standardized_isolation))
+
+        return '; '.join([s.lower() for s in standardized_isolation])
     
     # Apply the standardization to both columns
     new_meta['sample_type'] = new_meta['sample_type'].apply(standardize_isolation_source)
