@@ -1,4 +1,6 @@
-U05876 #reference strain G-10
+#reference strain G-10
+U05876 
+E11655
 
 #very high diversity (genotype A)
 OQ607171
@@ -52,3 +54,19 @@ LT617109
 #clockor - low divergence
 LT617110
 PQ612461
+
+# pulling  cluster up
+AB465367
+MN119286
+
+# Xu. Q outliers - recombinants
+PX449039
+PX448981
+PX448978
+PX448979
+PX448982
+PX448983
+PX448965
+PX448985
+PX449037
+PX449038
