@@ -1,8 +1,8 @@
 {
   "title": "Genomic epidemiology of Coxsackievirus A16 Whole Genome",
   "maintainers": [
-    {"name": "Nadia Neuner-Jehle", "url": "https://www.swisstph.ch/en/staff/profile/people/nadia-neuner-jehle"},
-    {"name": "Emma Hodcroft", "url": "http://emmahodcroft.com/"}
+    {"name": "Nadia Neuner-Jehle", "url": "https://eve-lab.org/people/nadia-neuner-jehle/"},
+    {"name": "Emma Hodcroft", "url": "https://eve-lab.org/people/emma-hodcroft/"}
   ],
   "data_provenance": [
     {
@@ -19,7 +19,7 @@
     },
     {
       "key": "clade_assignment",
-      "title": "VP1 Clades",
+      "title": "Subclade Annotation (VP1-based)",
       "type": "categorical"
     },
     {
