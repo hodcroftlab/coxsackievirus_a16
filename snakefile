@@ -7,8 +7,17 @@
 # To run a default whole genome run ( <6400bp):
 # snakemake whole_genome/auspice/coxsackievirus_A16_whole_genome.json --cores 1
 
+from dotenv import load_dotenv
+import os
+from datetime import date
+import glob
+
 if not config:
     configfile: "config/config.yaml"
+
+load_dotenv(".env")
+REMOTE_GROUP = os.getenv("REMOTE_GROUP")
+UPLOAD_DATE = os.getenv("UPLOAD_DATE") or date.today().isoformat()
 
 ###############
 wildcard_constraints:
@@ -20,6 +29,8 @@ wildcard_constraints:
 # Define segments to analyze
 segments = ['vp1', 'whole-genome']
 GENES=["-5utr","-vp4", "-vp2", "-vp3", "-vp1", "-2A", "-2B", "-2C", "-3A", "-3B", "-3C", "-3D","-3utr"]
+CODING_GENES = ["VP4", "VP2", "VP3", "VP1", "2A", "2B", "2C", "3A", "3B", "3C", "3D"]
+
 
 # Rule to handle configuration files
 rule files:
@@ -42,6 +53,8 @@ rule files:
         METADATA =          "data/metadata.tsv"
 
 files = rules.files.input
+DOWNLOAD_INGEST = True
+
 
 # Expand augur JSON paths
 rule all:
@@ -56,22 +69,30 @@ rule all_genes:
         meta = files.METADATA,
         seq = files.SEQUENCES
 
+rule next_update:
+    input:
+        "auspice/coxsackievirus_A16_vp1.json", 
+        "auspice/coxsackievirus_A16_whole-genome.json",
+        "auspice/coxsackievirus_A16_gene_-vp1.json", 
+        "auspice/coxsackievirus_A16_gene_-3D.json"
+
 
 ##############################
 # Download from NBCI Virus with ingest snakefile
 ###############################
-rule fetch:
-    input:
-        dir = "ingest"
-    output:
-        sequences=files.SEQUENCES,
-        metadata=files.METADATA
-    shell:
-        """
-        cd {input.dir} 
-        snakemake --cores 9 all
-        cd ../
-        """
+if DOWNLOAD_INGEST:
+    rule fetch:
+        input:
+            dir = "ingest"
+        output:
+            sequences=files.SEQUENCES,
+            metadata=files.METADATA
+        shell:
+            """
+            cd {input.dir}
+            snakemake --cores 9 all
+            cd ../
+            """
 
 ##############################
 # Update strain names
@@ -286,8 +307,8 @@ rule filter:
         sequences = "{seg}/results/filtered.fasta",
         reason ="{seg}/results/reasons.tsv"
     params:
-        group_by = "country",
-        sequences_per_group = 15000, # set lower if you want to have a max sequences per group
+        group_by = "country year",
+        sequences_per_group = 1000, # set lower if you want to have a max sequences per group
         strain_id_field= config["id_field"],
         min_date = 1950  # G-10 was collected in 1952
     shell:
@@ -324,15 +345,15 @@ rule reference_gb_to_fasta:
 rule align: 
     message:
         """
-        Aligning sequences to {input.reference} using Nextalign.
+        Aligning sequences to {input.reference} using Nextclade run.
         """
     input:
         gff_reference = files.gff_reference,
         sequences = rules.filter.output.sequences,
         reference = rules.reference_gb_to_fasta.output.reference
     output:
-        alignment = "{seg}/results/aligned.fasta"
-
+        alignment = "{seg}/results/aligned.fasta",
+        tsv = "{seg}/results/nextclade.tsv",    
     params:
         penalty_gap_extend = config["align"]["penalty_gap_extend"],
         penalty_gap_open = config["align"]["penalty_gap_open"],
@@ -343,10 +364,10 @@ rule align:
         min_match_length = config["align"]["min_match_length"],
         allowed_mismatches = config["align"]["allowed_mismatches"],
         min_length = config["align"]["min_length"]
-    threads: 9
+    threads: workflow.cores
     shell:
         """
-        nextclade run \
+        nextclade3 run \
         -j {threads} \
         {input.sequences} \
         --input-ref {input.reference} \
@@ -361,7 +382,9 @@ rule align:
         --allowed-mismatches {params.allowed_mismatches} \
         --min-length {params.min_length} \
         --include-reference false \
-        --output-fasta {output.alignment} 
+        --output-tsv {output.tsv} \
+        --output-translations "{wildcards.seg}/results/translations/cds_{{cds}}.translation.fasta" \
+        --output-fasta {output.alignment}
         """
 
 # potentially add one-by-one genes
@@ -371,8 +394,9 @@ rule sub_alignments:
         alignment=rules.align.output.alignment,
         reference=files.reference
     output:
-        # alignment = "{seg}/results/aligned.fasta"
         alignment = "{seg}/results/aligned{gene}.fasta"
+    benchmark:
+        "benchmark/sub_alignments.{seg}{gene}.log"
     run:
         from Bio import SeqIO
         from Bio.Seq import Seq
@@ -400,9 +424,9 @@ rule sub_alignments:
             for record in alignment:
                 sequence = Seq(record.seq)
                 gene_keep = sequence[b[0]:b[1]]
-                if set(gene_keep) == {"N"} or len(gene_keep) == 0 or set(gene_keep) == {"-"}:
+                if set(gene_keep) in [{"N"}, {"-"}, set()]:
                     continue  # Skip sequences that are entirely masked
-                sequence = len(sequence) * "N"
+                sequence = len(sequence) * "-"
                 sequence = sequence[:b[0]] + gene_keep + sequence[b[1]:]
                 record.seq = Seq(sequence)
                 SeqIO.write(record, oh, "fasta")
@@ -419,7 +443,7 @@ rule tree:
     output:
         # tree = "{seg}/results/tree_raw.nwk"
         tree = "{seg}/results/tree_raw{gene}.nwk"
-    threads: 9
+    threads: workflow.cores    
     shell:
         """
         augur tree \
@@ -451,7 +475,7 @@ rule refine:
         coalescent = "opt",
         date_inference = "marginal",
         clock_filter_iqd = 6, # was 3
-        strain_id_field =config["id_field"],
+        strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
         # clock_rate_string = lambda wildcards: f"--clock-rate 0.004 --clock-std-dev 0.0015" if wildcards.gene or wildcards.quart else ""
@@ -478,47 +502,70 @@ rule ancestral:
     message: "Reconstructing ancestral sequences and mutations"
     input:
         tree = rules.refine.output.tree,
-        # alignment = rules.align.output.alignment,
-        alignment = rules.sub_alignments.output.alignment
+        alignment = rules.sub_alignments.output.alignment,
+        annotation = files.reference,
     output:
-        # node_data = "{seg}/results/nt_muts.json"
-        node_data = "{seg}/results/nt_muts{gene}.json"
+        node_data = "{seg}/results/muts{gene}.json",
     params:
-        inference = "joint"
-    shell:
-        """
-        augur ancestral \
-            --tree {input.tree} \
-            --alignment {input.alignment} \
-            --output-node-data {output.node_data} \
-            --keep-ambiguous\
-            --inference {params.inference}
-        """
+        inference = "joint",
+        genes = lambda wildcards: "VP1" if wildcards.seg == "vp1" else (wildcards.gene.replace("-", "", 1).upper() if wildcards.gene else CODING_GENES), 
+        translation_template= r"{seg}/results/translations/cds_%GENE.translation.fasta",
+        output_translation_template=r"{seg}/results/translations/cds_%GENE.ancestral.fasta",
+        root = "{seg}/results/ancestral_sequences.fasta",
 
-rule translate:
-    message: "Translating amino acid sequences"
-    input:
-        tree = rules.refine.output.tree,
-        node_data = rules.ancestral.output.node_data,
-        reference = files.reference
-    output:
-        node_data = "{seg}/results/aa_muts{gene}.json"
-        # node_data = "{seg}/results/aa_muts.json"
-    shell:
-        """
-        augur translate \
-            --tree {input.tree} \
-            --ancestral-sequences {input.node_data} \
-            --reference-sequence {input.reference} \
-            --output-node-data {output.node_data}
-        """
+    run:
+        # Check if this is for a specific gene (wildcards.gene is not empty)
+        if wildcards.gene != "":
+            # Running for a specific gene
+            shell("""
+                augur ancestral \
+                --tree {input.tree} \
+                --alignment {input.alignment} \
+                --output-node-data {output.node_data} \
+                --keep-ambiguous \
+                --inference {params.inference}
+            """)
+        else:
+            # Running for whole genome with translation
+            shell("""
+                augur ancestral \
+                --tree {input.tree} \
+                --alignment {input.alignment} \
+                --annotation {input.annotation} \
+                --genes {params.genes} \
+                --translations {params.translation_template} \
+                --output-node-data {output.node_data} \
+                --output-translations {params.output_translation_template} \
+                --output-sequences {params.root} \
+                --skip-validation
+            """)
+
+            # --root-sequence {input.annotation} \  -> assigns mutations to the root relative to the reference, not wanted here
+
+
+# rule translate:
+#     message: "Translating amino acid sequences"
+#     input:
+#         tree = rules.refine.output.tree,
+#         node_data = rules.ancestral.output.node_data,
+#         reference = files.reference
+#     output:
+#         node_data = "{seg}/results/aa_muts{gene}.json"
+#         # node_data = "{seg}/results/aa_muts.json"
+#     shell:
+#         """
+#         augur translate \
+#             --tree {input.tree} \
+#             --ancestral-sequences {input.node_data} \
+#             --reference-sequence {input.reference} \
+#             --output-node-data {output.node_data}
+#         """
 
 rule clades: 
     message: "Assigning clades according to nucleotide mutations"
     input:
         tree=rules.refine.output.tree,
-        aa_muts = rules.translate.output.node_data,
-        nuc_muts = rules.ancestral.output.node_data,
+        muts = rules.ancestral.output.node_data,
         clades = files.clades #"vp1/config/vp1_clades.tsv" 
     output:
         # clade_data = "{seg}/results/clades.json"
@@ -526,7 +573,7 @@ rule clades:
     shell:
         """
         augur clades --tree {input.tree} \
-            --mutations {input.nuc_muts} {input.aa_muts} \
+            --mutations {input.muts} \
             --clades {input.clades} \
             --output-node-data {output.clade_data}
         """
@@ -622,14 +669,14 @@ rule export:
         metadata = rules.clade_published.output.final_metadata,
         branch_lengths = rules.refine.output.node_data,
         traits = rules.traits.output.node_data,
-        nt_muts = rules.ancestral.output.node_data,
-        aa_muts = rules.translate.output.node_data,
+        muts = rules.ancestral.output.node_data,
         clades = rules.clades.output.clade_data,
         colors = files.colors,
         lat_longs = files.lat_longs,
         auspice_config = files.auspice_config
     params:
-        strain_id_field= config["id_field"]
+        strain_id_field= config["id_field"],
+        muts_flag = lambda wildcards: "" if wildcards.gene else f"{wildcards.seg}/results/muts.json",
     output:
         auspice_json = "auspice/coxsackievirus_A16_{seg}{gene}.json"
         # auspice_json="auspice/coxsackievirus_A16_{seg}-accession.json"
@@ -640,7 +687,7 @@ rule export:
             --tree {input.tree} \
             --metadata {input.metadata} \
             --metadata-id-columns {params.strain_id_field} \
-            --node-data {input.branch_lengths} {input.traits} {input.nt_muts} {input.aa_muts} {input.clades} \
+            --node-data {input.branch_lengths} {input.traits} {params.muts_flag} {input.clades} \
             --colors {input.colors} \
             --lat-longs {input.lat_longs} \
             --auspice-config {input.auspice_config} \
@@ -692,3 +739,23 @@ rule clean:
 
     shell:
         "rm {params}"
+
+rule upload: ## make sure you're logged in to Nextstrain
+    message: "Uploading auspice JSONs to Nextstrain"
+    input:
+        # jsons = glob.glob("auspice/*.json"),
+        jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
+                 "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
+    params:
+        remote_group=REMOTE_GROUP,
+        date=UPLOAD_DATE,
+    shell:
+        """
+        nextstrain login
+        nextstrain remote upload \
+            nextstrain.org/groups/{params.remote_group}/ \
+            {input.jsons}
+
+        mkdir -p auspice/{params.date}
+        cp {input.jsons} auspice/{params.date}/
+        """
