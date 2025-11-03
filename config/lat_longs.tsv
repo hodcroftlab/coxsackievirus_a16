@@ -89,6 +89,7 @@ country	guyana	5.0	-59.0
 country	haiti	19.1399952	-72.3570971
 country	honduras	15.2	-86.2419
 country	hong kong	22.3964	114.1095
+place	hong kong	22.3964	114.1095
 country	hungary	47.1625	19.5033
 country	iceland	64.9841821	-18.1059012
 country	indonesia	-5.0	120.0
@@ -439,6 +440,7 @@ place	Taixing	32.1687	120.0142
 place	Taizhou	32.4933	119.9017
 place	TianJing	39.1422	117.1767
 place	Tianjin	39.3434	117.3616
+place	Tibet	29.6500	91.1300
 place	Tongxiang	30.6302	120.5651
 place	Wenzhou	27.9949	120.6990
 place	Wuhan	30.5928	114.3055
