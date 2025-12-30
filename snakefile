@@ -798,9 +798,9 @@ rule clean:
 rule upload: ## make sure you're logged in to Nextstrain
     message: "Uploading auspice JSONs to Nextstrain"
     input:
-        # jsons = glob.glob("auspice/*.json"),
-        jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
-                 "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
+        jsons = glob.glob("auspice/*.json"),
+        # jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
+        #          "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
     params:
         remote_group=REMOTE_GROUP,
         date=UPLOAD_DATE,

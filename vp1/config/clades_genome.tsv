@@ -5,19 +5,23 @@ A	nuc	816	A
 
 B	nuc	162	G
 
-B1	VP1	193	P
 B1	nuc	577	C
+B1	nuc	444	C
 
 B2	nuc	559	C
 B2	nuc	679	T
 
 B1a	clade	B1
-B1a	nuc	318	C
+B1a	nuc	39	T
+B1a	nuc	93	T
+B1a	nuc	369	C
+B1a	nuc	523	T
 
 B1b	clade	B1
 B1b	nuc	60	G
 B1b	nuc	276	C
 
-B1c	nuc	452	T
-B1c	nuc	453	A
-B1c	nuc	724	G
+B1c	nuc	306	T
+B1c	nuc	547	G
+B1c	nuc	339	A
+B1c	nuc	719	G
