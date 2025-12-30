@@ -12,12 +12,16 @@ import os
 from datetime import date
 import glob
 
+# Load config file
 if not config:
     configfile: "config/config.yaml"
 
+# Load environment variables
 load_dotenv(".env")
 REMOTE_GROUP = os.getenv("REMOTE_GROUP")
 UPLOAD_DATE = os.getenv("UPLOAD_DATE") or date.today().isoformat()
+
+DOWNLOAD_INGEST=True
 
 ###############
 wildcard_constraints:
@@ -53,8 +57,7 @@ rule files:
         METADATA =          "data/metadata.tsv"
 
 files = rules.files.input
-DOWNLOAD_INGEST = True
-
+##############################
 
 # Expand augur JSON paths
 rule all:
@@ -80,17 +83,18 @@ rule next_update:
 ##############################
 # Download from NBCI Virus with ingest snakefile
 ###############################
-if DOWNLOAD_INGEST:
+if DOWNLOAD_INGEST==True:
     rule fetch:
         input:
             dir = "ingest"
         output:
             sequences=files.SEQUENCES,
             metadata=files.METADATA
+        threads: workflow.cores
         shell:
             """
             cd {input.dir}
-            snakemake --cores 9 all
+            snakemake --cores {threads} all
             cd ../
             """
 
@@ -115,6 +119,33 @@ rule update_strain_names:
         cp {output.file_out} {params.backup}
         """
 
+# This rule is very slow. Only give accessions as input where you are certain that they have GenBank metadata.
+rule fetch_metadata:
+    message:
+        """
+        Retrieving GenBank metadata for the specified accessions.
+        """
+    input:
+        accessions="data/metadata/FRA.txt",
+        config="config/config.yaml" # include symptom list and isolation source mapping
+    output:
+        metadata="data/metadata/FRA.tsv",
+    params:
+        virus="Coxsackievirus A10",
+        genbank_metadata="data/genbank_metadata.tsv"
+    log:
+        "logs/fetch_metadata.log"
+    shell:
+        """
+        python scripts/fetch_genbank_metadata.py \
+            --virus "{params.virus}" \
+            --accession_file {input.accessions} \
+            --output {output.metadata} \
+            --genbank {params.genbank_metadata} \
+            --config {input.config} \
+            2> {log}
+        """
+
 ##############################
 # Change the format of the dates in the metadata
 # Attention: `augur curate` only accepts iso 8 formats; please make sure that you save e.g. Excel files in the correct format
@@ -126,43 +157,31 @@ rule curate:
         Cleaning up metadata with augur curate
         """
     input:
-        metadata=files.meta_public,  # Path to input metadata file
+        metadata = files.meta_public,  # Path to input metadata file
         meta_collab = files.meta_collab  # Data shared with us by collaborators
     params:
         strain_id_field=config["id_field"],
         date_fields=config["curate"]["date_fields"],
         expected_date_formats=config["curate"]["expected_date_formats"],
+        tmp = "temp/merged_meta.tsv",  # Final output file for publications metadata
     output:
-        metadata = "data/curated/meta_public.tsv",  # Final output file for publications metadata
-        meta_collab="data/curated/meta_collab.tsv",  # Curated collaborator metadata
         meta="data/curated/all_meta.tsv"  # Final merged output file
     shell:
         """
+        # Merge curated metadata
+        augur merge --metadata metadata={input.metadata} meta_collab={input.meta_collab}\
+            --metadata-id-columns {params.strain_id_field} \
+            --output-metadata {params.tmp}
+
         # Normalize strings for publication metadata
         augur curate normalize-strings \
             --id-column {params.strain_id_field} \
-            --metadata {input.metadata} \
+            --metadata {params.tmp} \
         | augur curate format-dates \
             --date-fields {params.date_fields} \
             --no-mask-failure \
             --expected-date-formats {params.expected_date_formats} \
             --id-column {params.strain_id_field} \
-            --output-metadata {output.metadata}
-        
-        # Normalize strings and format dates for collab metadata
-        augur curate normalize-strings \
-            --id-column {params.strain_id_field} \
-            --metadata {input.meta_collab} \
-        | augur curate format-dates \
-            --date-fields {params.date_fields} \
-            --no-mask-failure \
-            --expected-date-formats {params.expected_date_formats} \
-            --id-column {params.strain_id_field} \
-            --output-metadata {output.meta_collab}
-        
-        # Merge curated metadata
-        augur merge --metadata metadata={output.metadata} meta_collab={output.meta_collab}\
-            --metadata-id-columns {params.strain_id_field} \
             --output-metadata {output.meta}
         """
 
@@ -174,13 +193,13 @@ rule curate:
 rule update_sequences:
     input:
         sequences = files.SEQUENCES,
-        metadata=files.METADATA,
+        metadata = files.METADATA,
         extra_metadata = rules.curate.output.meta
     output:
         sequences = "data/all_sequences.fasta"
     params:
         file_ending = "data/*.fas*",
-        temp = "data/temp_sequences.fasta",
+        temp = "temp/temp_sequences.fasta",
         date_last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
     shell:
@@ -246,12 +265,12 @@ rule add_metadata:
         Cleaning data in metadata
         """
     input:
-        metadata=files.METADATA,
-        new_data=rules.curate.output.meta,
-        regions=ancient(files.regions),
-        renamed_strains=rules.update_strain_names.output.file_out
+        metadata = files.METADATA,
+        new_data = rules.curate.output.meta,
+        regions = ancient(files.regions),
+        renamed_strains = rules.update_strain_names.output.file_out
     params:
-        strain_id_field=config["id_field"],
+        strain_id_field = config["id_field"],
         last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
     output:
@@ -269,17 +288,41 @@ rule add_metadata:
             --output {output.metadata}
             """
 
-##############################
-# Rest of the augur pipeline
-###############################
+## Deduplicate sequences that have identical strain names and sequences
+rule deduplicate:
+    message:
+        """
+        Deduplicating sequences with identical strain names and sequences
+        """
+    input:
+        sequences = rules.blast_sort.output.sequences,
+        metadata = rules.add_metadata.output.metadata
+    params:
+        id_field = config["id_field"],
+        threshold = 0.98 # percent identity threshold to consider sequences as duplicates
+    output:
+        sequences = "{seg}/results/deduplicated_sequences.fasta",
+    shell:
+        """
+        python scripts/deduplicate.py \
+            --in-sequences {input.sequences} \
+            --metadata {input.metadata} \
+            --id-field {params.id_field} \
+            --threshold {params.threshold} \
+            --out-sequences {output.sequences} 
+        """
 
+
+##############################
+# Create an index of sequence composition for filtering & filter
+###############################
 rule index_sequences:
     message:
         """
         Creating an index of sequence composition for filtering
         """
     input:
-        sequences = rules.blast_sort.output.sequences
+        sequences = rules.deduplicate.output.sequences
     output:
         sequence_index = "{seg}/results/sequence_index.tsv"
     shell:
@@ -298,19 +341,21 @@ rule filter:
           - excluding strains in {input.exclude}
         """
     input:
-        sequences = rules.blast_sort.output.sequences,
+        sequences = rules.deduplicate.output.sequences,
         sequence_index = rules.index_sequences.output.sequence_index,
         metadata = rules.add_metadata.output.metadata,
         exclude = files.dropped_strains,
         include = files.incl_strains,
     output:
         sequences = "{seg}/results/filtered.fasta",
-        reason ="{seg}/results/reasons.tsv"
+        reason = "{seg}/results/filter_log.tsv"
     params:
         group_by = "country year",
         sequences_per_group = 1000, # set lower if you want to have a max sequences per group
         strain_id_field= config["id_field"],
-        min_date = 1950  # G-10 was collected in 1952
+        min_date = 1950,  # G-10 was collected in 1952
+        min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400}[wildcards.seg], 
+        max_length = lambda wildcards: {"vp1": 900, "whole_genome": 8000}[wildcards.seg],  
     shell:
         """
         augur filter \
@@ -323,10 +368,15 @@ rule filter:
             --group-by {params.group_by} \
             --sequences-per-group {params.sequences_per_group} \
             --min-date {params.min_date} \
+            --min-length {params.min_length} --max-length {params.max_length} \
             --output-sequences {output.sequences}\
             --output-log {output.reason}
         """
 
+##############################
+# Reference sequence &
+# Alignment
+###############################
 rule reference_gb_to_fasta:
     message:
         """
@@ -431,7 +481,9 @@ rule sub_alignments:
                 record.seq = Seq(sequence)
                 SeqIO.write(record, oh, "fasta")
 
-
+##############################
+# Tree building
+###############################
 rule tree:
     message:
         """
@@ -451,6 +503,12 @@ rule tree:
             --nthreads {threads} \
             --output {output.tree}
         """
+
+##############################
+# Refine tree &
+# Ancestral sequence reconstruction
+# & Translation
+###############################
 
 rule refine:
     message:
@@ -561,6 +619,10 @@ rule ancestral:
 #             --output-node-data {output.node_data}
 #         """
 
+##############################
+# Clade assignment
+###############################
+
 rule clades: 
     message: "Assigning clades according to nucleotide mutations"
     input:
@@ -639,21 +701,10 @@ rule clade_published:
         vp1_lengths = [len(record.seq.replace("N", "").replace("-", "")) for record in seqs]
 
         # Create a DataFrame with sequence IDs and VP1 lengths
-        len_df = pd.DataFrame({"accession": ids, "l_vp1": vp1_lengths})
+        len_df = pd.DataFrame({"accession": ids, "length_vp1": vp1_lengths})
 
         # Add the length to the metadata
         merged_df = pd.merge(merged_df, len_df, left_on=params.strain_id_field, right_on="accession", how="left")
-
-        # Define bins and labels for VP1 length ranges
-        bins_length = [-np.inf, 599, 699, 799, 899, np.inf]
-        labels_length = ['<600nt', '600-700nt', '700-800nt', '800-900nt', '>900nt']
-
-        # Create length range column using pd.cut for VP1 length
-        merged_df['length_VP1'] = pd.cut(merged_df['l_vp1'], bins=bins_length, labels=labels_length, right=False).astype(str)
-
-        # Drop the original 'l_vp1' column
-        merged_df = merged_df.drop(columns=["l_vp1"])
-
         final_meta = pd.merge(merged_df, rivm_subtypes, on=params.strain_id_field, how='left')
 
         # add url with genbank accession
@@ -661,6 +712,10 @@ rule clade_published:
         
         # Save the merged dataframe to the output file
         final_meta.to_csv(output.final_metadata, sep="\t", index=False)
+
+#########################
+#  EXPORT
+#########################
 
 rule export:
     message: "Creating auspice JSONs"
@@ -725,18 +780,18 @@ rule clean:
     message: "Removing directories: {params}"
     params:
         "*/results/*",
-        "auspice/*",
-        "ingest/data/*",
+        "auspice/*.json",
+        "ingest/data/*.*",
         "temp/*",
+        "logs/*",
+        "benchmark/*",
         files.METADATA,
         files.SEQUENCES,
-        "data/updated_strain_names.tsv",
         "data/curated/*",
         "data/all_sequences.fasta",
         "data/all_metadata.tsv",
         "data/final_metadata.tsv",
-        "logs/*",
-
+        "*/logs/*",
     shell:
         "rm {params}"
 
