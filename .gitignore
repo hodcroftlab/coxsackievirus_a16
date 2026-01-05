@@ -38,3 +38,5 @@ logs
 ## part of nextstrain-builds-data repo
 # data/meta_collab.tsv
 # data/meta_public.tsv
+# data/subgenotypes_rivm.csv
+# data/clades_vp1.tsv
