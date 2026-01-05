@@ -172,6 +172,8 @@ rule curate:
         meta="data/curated/all_meta.tsv"  # Final merged output file
     shell:
         """
+        mkdir -p temp
+
         # Merge curated metadata
         augur merge --metadata metadata={input.metadata} meta_collab={input.meta_collab}\
             --metadata-id-columns {params.strain_id_field} \

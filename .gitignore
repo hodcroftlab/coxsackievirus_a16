@@ -41,3 +41,4 @@ logs
 # data/meta_public.tsv
 # data/subgenotypes_rivm.csv
 # data/clades_vp1.tsv
+# data/strain_names_previous_run.tsv
