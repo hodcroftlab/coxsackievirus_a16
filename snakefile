@@ -76,8 +76,8 @@ rule next_update:
     input:
         "auspice/coxsackievirus_A16_vp1.json", 
         "auspice/coxsackievirus_A16_whole-genome.json",
-        "auspice/coxsackievirus_A16_gene_-vp1.json", 
-        "auspice/coxsackievirus_A16_gene_-3D.json"
+        # "auspice/coxsackievirus_A16_gene_-vp1.json", 
+        # "auspice/coxsackievirus_A16_gene_-3D.json"
 
 
 ##############################
@@ -532,7 +532,7 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 6, # was 3
+        clock_filter_iqd = 3, # was 3
         strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015

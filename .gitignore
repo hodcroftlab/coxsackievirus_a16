@@ -1,7 +1,8 @@
 .snakemake
 
 data/*
-auspice/
+auspice/*
+!/auspice/2025-12-30/
 nextstrain_upload/
 
 *errors.csv

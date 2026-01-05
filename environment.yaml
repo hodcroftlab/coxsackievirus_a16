@@ -1,0 +1,20 @@
+name: grouping
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # Core Python dependencies
+  - python =3.9
+  - biopython
+  - augur
+  - auspice
+  - nextclade
+  - csvtk
+  - seqkit
+  - tsv-utils
+  - entrez-direct
+  - unzip
+  - blast
+  - nextstrain-cli
+  - ncbi-datasets-cli >=16.29.0
+  - snakemake=7
