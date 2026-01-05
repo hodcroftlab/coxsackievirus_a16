@@ -10,14 +10,17 @@
 from dotenv import load_dotenv
 import os
 from datetime import date
-import glob
 
 # Load config file
 if not config:
     configfile: "config/config.yaml"
 
 # Load environment variables
-load_dotenv(".env")
+# Try to load .env, but don't fail if it doesn't exist (for Actions)
+try:
+    load_dotenv(".env")
+except:
+    pass
 REMOTE_GROUP = os.getenv("REMOTE_GROUP")
 UPLOAD_DATE = os.getenv("UPLOAD_DATE") or date.today().isoformat()
 
@@ -53,8 +56,8 @@ rule files:
         meta_collab =       "data/meta_collab.tsv",
         last_updated_file = "data/date_last_updated.txt",
         local_accn_file =   "data/local_accn.txt",
-        SEQUENCES =         "data/sequences.fasta",
-        METADATA =          "data/metadata.tsv"
+        SEQUENCES =         "data/fetch/sequences.fasta",
+        METADATA =          "data/fetch/metadata.tsv",
 
 files = rules.files.input
 ##############################
@@ -73,11 +76,12 @@ rule all_genes:
         seq = files.SEQUENCES
 
 rule next_update:
+    """Final rule to generate all required JSON outputs for a monthly run"""
     input:
         "auspice/coxsackievirus_A16_vp1.json", 
         "auspice/coxsackievirus_A16_whole-genome.json",
-        # "auspice/coxsackievirus_A16_gene_-vp1.json", 
-        # "auspice/coxsackievirus_A16_gene_-3D.json"
+        # Add gene-specific builds if needed: 
+        # expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES)
 
 
 ##############################
@@ -163,7 +167,7 @@ rule curate:
         strain_id_field=config["id_field"],
         date_fields=config["curate"]["date_fields"],
         expected_date_formats=config["curate"]["expected_date_formats"],
-        tmp = "temp/merged_meta.tsv",  # Final output file for publications metadata
+        tmp = temp("temp/merged_meta.tsv"),  # Final output file for publications metadata
     output:
         meta="data/curated/all_meta.tsv"  # Final merged output file
     shell:
@@ -183,6 +187,7 @@ rule curate:
             --expected-date-formats {params.expected_date_formats} \
             --id-column {params.strain_id_field} \
             --output-metadata {output.meta}
+        echo "Curated metadata saved to {output.meta}"
         """
 
 ##############################
@@ -199,18 +204,29 @@ rule update_sequences:
         sequences = "data/all_sequences.fasta"
     params:
         file_ending = "data/*.fas*",
-        temp = "temp/temp_sequences.fasta",
         date_last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
     shell:
         """
-        touch {params.temp} && rm {params.temp}
-        cat {params.file_ending} > {params.temp}
-        python scripts/update_sequences.py --in_seq {params.temp} --out_seq {output.sequences} --dates {params.date_last_updated} \
-        --local_accession {params.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
-        --ingest_seqs {input.sequences}
-        rm {params.temp}
-        awk '/^>/{{if (seen[$1]++ == 0) print; next}} !/^>/{{print}}' {output.sequences} > {params.temp} && mv {params.temp} {output.sequences}
+        set -euo pipefail
+        # use bash nullglob so missing globs are ignored
+        shopt -s nullglob
+
+        mkdir -p temp
+        tmpdir=$(mktemp -d temp/update_seq.XXXXXX)
+        tmp="$tmpdir/merged_sequences.fasta"
+        dedup="$tmpdir/dedup_sequences.fasta"
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        # Concatenate ingest sequences + any additional fasta files (if present)
+        cat {input.sequences} {params.file_ending} > "$tmp"
+
+        python scripts/update_sequences.py --in_seq "$tmp" --dates {params.date_last_updated} \
+            --local_accession {params.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
+            --ingest_seqs {input.sequences} --out_seq {output.sequences}
+
+        # Deduplicate FASTA headers (keep first occurrence) and atomically replace
+        awk '/^>/{{ if (seen[$1]++ == 0) print; next }} !/^>/{{ print }}' {output.sequences} > "$dedup" && mv "$dedup" {output.sequences}
         """
 
 
@@ -777,28 +793,32 @@ rule rename_genes:
         """
 
 rule clean:
-    message: "Removing directories: {params}"
+    message: 
+        """
+        Removing previous results and temporary files in the following directories:
+        {params.targets}
+        """
     params:
-        "*/results/*",
-        "auspice/*.json",
-        "ingest/data/*.*",
-        "temp/*",
-        "logs/*",
-        "benchmark/*",
-        files.METADATA,
-        files.SEQUENCES,
-        "data/curated/*",
-        "data/all_sequences.fasta",
-        "data/all_metadata.tsv",
-        "data/final_metadata.tsv",
-        "*/logs/*",
-    shell:
-        "rm {params}"
+        targets = [
+            "*/results/*",
+            "auspice/*.json",
+            "ingest/data/*.*",
+            "temp/*",
+            "logs/*",
+            "benchmark/*",
+            "data/fetch/*",
+        ]
+    shell: 
+        """
+        for dir in {params.targets}; do
+            rm -rf "$dir" 2>/dev/null || true
+        done
+        """
 
 rule upload: ## make sure you're logged in to Nextstrain
     message: "Uploading auspice JSONs to Nextstrain"
     input:
-        jsons = glob.glob("auspice/*.json"),
+        jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
         # jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
         #          "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
     params:

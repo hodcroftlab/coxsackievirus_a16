@@ -1,34 +1,66 @@
-name: Download Assemblies to create override groups
-on:
-  workflow_dispatch:
+name: Monthly CVA16 Pipeline Run
+on: 
+  workflow_dispatch:  # Manual trigger for testing
   schedule:
-    - cron: '0 0 1 * *' # Runs monthly on the 1st at midnight UTC
+    - cron:  '0 0 1 * *'  # 1st of month, midnight UTC
+
 jobs:
-  download-and-upload:
+  pipeline:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: "3.9"
-          activate-environment: grouping
+          activate-environment: nextstrain
           environment-file: environment.yaml
-      - name: Run snakemake
+
+      - name: Clean previous results
+        shell: bash -l {0}
         run: |
-          snakemake --cores 1 clean
-          snakemake --cores 10 next_update
-        shell: bash -l {0} 
-      - name: Upload to auspice
-        run:
+          snakemake --cores 1 clean || echo "Clean rule completed (some files may not exist)"
+
+      - name: Run pipeline
+        shell: bash -l {0}
+        env:
+          REMOTE_GROUP: ${{ secrets. NEXTSTRAIN_REMOTE_GROUP }}
+          UPLOAD_DATE: ${{ env.GITHUB_RUN_DATE }}
+        run:  |
+          snakemake --cores 10 next_update \
+            --use-conda \
+            --rerun-incomplete
+
+      - name: Upload to Nextstrain
+        shell:  bash -l {0}
+        env:
+          NEXTSTRAIN_LOGIN_TOKEN: ${{ secrets.NEXTSTRAIN_LOGIN_TOKEN }}
+          REMOTE_GROUP: ${{ secrets. NEXTSTRAIN_REMOTE_GROUP }}
+        run: |
+          # Create .nextstrain/cli config for non-interactive auth
+          mkdir -p ~/. nextstrain
+          echo "nextstrain_login_token: ${NEXTSTRAIN_LOGIN_TOKEN}" > ~/.nextstrain/cli. config
+          
+          # Run upload
           snakemake --cores 1 upload
-      - name: Commit and Push Results
+
+      - name:  Commit and Push Results
+        shell: bash -l {0}
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
-          git pull
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git pull origin automatic-updates
           git add auspice/
-          git commit -m "Update results from Snakemake run" || echo "No changes to commit"
-          git push
+          git commit -m "chore: update CVA16 builds [skip ci]" || echo "No changes to commit"
+          git push origin automatic-updates
+
+      - name:  Notify on failure
+        if: failure()
+        run: |
+          echo "Pipeline failed!  Check the logs at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"

@@ -2,7 +2,6 @@
 
 data/*
 auspice/*
-!/auspice/2025-12-30/
 nextstrain_upload/
 
 *errors.csv
@@ -29,3 +28,12 @@ compare-alignments
 temp
 benchmark
 logs
+
+# data to include
+!/auspice/2025-12-30/
+!/data/date_last_updated.txt
+!/data/local_accn.txt
+
+## part of nextstrain-builds-data repo
+# data/meta_collab.tsv
+# data/meta_public.tsv
