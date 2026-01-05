@@ -33,6 +33,7 @@ logs
 !/auspice/2025-12-30/
 !/data/date_last_updated.txt
 !/data/local_accn.txt
+!/data/references
 
 ## part of nextstrain-builds-data repo
 # data/meta_collab.tsv
