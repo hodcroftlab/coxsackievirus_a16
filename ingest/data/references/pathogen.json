@@ -1,0 +1,47 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nextstrain/nextclade/refs/heads/release/packages/nextclade-schemas/input-pathogen-json.schema.json",
+  "schemaVersion": "3.0.0",
+  "files": {
+    "reference": "reference.fasta",
+    "pathogenJson": "pathogen.json",
+    "genomeAnnotation": "annotation.gff3"
+  },
+  "attributes": {
+    "name": "Coxsackievirus A16",
+    "reference name": "coxsackievirus A16 G-10, complete genome.",
+    "reference accession": "U05876.1"
+  },
+  "defaultCds": "VP1",
+    "qc": {
+      "frameShifts": {
+      "enabled": true,
+      "scoreWeight": 20
+    },
+    "missingData": {
+      "enabled": true,
+      "missingDataThreshold": 2000,
+      "scoreBias": 500
+    },
+    "mixedSites": {
+      "enabled": true,
+      "mixedSitesThreshold": 40
+    },
+    "privateMutations": {
+      "cutoff": 700,
+      "enabled": true,
+      "typical": 600,
+      "weightLabeledSubstitutions": 1,
+      "weightReversionSubstitutions": 2,
+      "weightUnlabeledSubstitutions": 1
+    },
+    "stopCodons": {
+      "enabled": true,
+      "scoreWeight": 40
+    },
+    "recombinants": {
+      "enabled": true,
+      "mutationsThreshold": 140,
+      "scoreWeight": 50
+    }
+    }
+}

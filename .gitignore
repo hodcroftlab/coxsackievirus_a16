@@ -12,7 +12,7 @@ ingest/logs/
 
 */results/
 */temp/
-*/data/
+ingest/data/*.*
 
 *.code-workspace
 
@@ -34,6 +34,7 @@ logs
 !/data/date_last_updated.txt
 !/data/local_accn.txt
 !/data/references
+!/ingest/data/references/
 
 ## part of nextstrain-builds-data repo
 # data/meta_collab.tsv
