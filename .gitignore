@@ -1,7 +1,7 @@
 .snakemake
 
 data/*
-auspice/
+auspice/*
 nextstrain_upload/
 
 *errors.csv
@@ -12,7 +12,7 @@ ingest/logs/
 
 */results/
 */temp/
-*/data/
+ingest/data/*.*
 
 *.code-workspace
 
@@ -28,3 +28,17 @@ compare-alignments
 temp
 benchmark
 logs
+
+# data to include
+!/auspice/2025-12-30/
+!/data/date_last_updated.txt
+!/data/local_accn.txt
+!/data/references
+!/ingest/data/references/
+
+## part of nextstrain-builds-data repo
+data/meta_collab.tsv
+data/meta_public.tsv
+data/subgenotypes_rivm.csv
+data/clades_vp1.tsv
+data/strain_names_previous_run.tsv

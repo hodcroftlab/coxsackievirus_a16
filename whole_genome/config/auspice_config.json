@@ -129,16 +129,6 @@
       "type": "continuous"
     },
     {
-      "key": "has_age",
-      "title": "Age available",
-      "type": "boolean"
-    },
-    {
-      "key": "has_diagnosis",
-      "title": "Diagnosis available",
-      "type": "boolean"
-    },
-    {
       "key": "abbr_authors",
       "title": "Authors"
     }
@@ -149,7 +139,7 @@
     "region"
   ],
   "panels": [
-     "tree",
+    "tree",
     "map",
     "entropy"
   ],
@@ -168,9 +158,10 @@
     "region",
     "author",
     "subgenogroup", 
-    "length_VP1",
+    "length_vp1",
     "med_diagnosis_major",
-    "has_age",
+    "Age available",
+    "Diagnosis available",
     "date_added",
     "doi"
   ]

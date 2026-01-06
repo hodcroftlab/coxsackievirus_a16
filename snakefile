@@ -10,16 +10,19 @@
 from dotenv import load_dotenv
 import os
 from datetime import date
-import glob
 
 # Load config file
 if not config:
     configfile: "config/config.yaml"
 
 # Load environment variables
-load_dotenv(".env")
+# Try to load .env, but don't fail if it doesn't exist (for Actions)
+try:
+    load_dotenv(".env")
+except:
+    pass
 REMOTE_GROUP = os.getenv("REMOTE_GROUP")
-UPLOAD_DATE = os.getenv("UPLOAD_DATE") or date.today().isoformat()
+UPLOAD_DATE = date.today().isoformat()
 
 DOWNLOAD_INGEST=True
 
@@ -53,8 +56,8 @@ rule files:
         meta_collab =       "data/meta_collab.tsv",
         last_updated_file = "data/date_last_updated.txt",
         local_accn_file =   "data/local_accn.txt",
-        SEQUENCES =         "data/sequences.fasta",
-        METADATA =          "data/metadata.tsv"
+        SEQUENCES =         "data/fetch/sequences.fasta",
+        METADATA =          "data/fetch/metadata.tsv",
 
 files = rules.files.input
 ##############################
@@ -73,11 +76,12 @@ rule all_genes:
         seq = files.SEQUENCES
 
 rule next_update:
+    """Final rule to generate all required JSON outputs for a monthly run"""
     input:
         "auspice/coxsackievirus_A16_vp1.json", 
         "auspice/coxsackievirus_A16_whole-genome.json",
-        "auspice/coxsackievirus_A16_gene_-vp1.json", 
-        "auspice/coxsackievirus_A16_gene_-3D.json"
+        # Add gene-specific builds if needed: 
+        # expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES)
 
 
 ##############################
@@ -163,11 +167,13 @@ rule curate:
         strain_id_field=config["id_field"],
         date_fields=config["curate"]["date_fields"],
         expected_date_formats=config["curate"]["expected_date_formats"],
-        tmp = "temp/merged_meta.tsv",  # Final output file for publications metadata
+        tmp = temp("temp/merged_meta.tsv"),  # Final output file for publications metadata
     output:
         meta="data/curated/all_meta.tsv"  # Final merged output file
     shell:
         """
+        mkdir -p temp
+
         # Merge curated metadata
         augur merge --metadata metadata={input.metadata} meta_collab={input.meta_collab}\
             --metadata-id-columns {params.strain_id_field} \
@@ -183,6 +189,7 @@ rule curate:
             --expected-date-formats {params.expected_date_formats} \
             --id-column {params.strain_id_field} \
             --output-metadata {output.meta}
+        echo "Curated metadata saved to {output.meta}"
         """
 
 ##############################
@@ -199,18 +206,29 @@ rule update_sequences:
         sequences = "data/all_sequences.fasta"
     params:
         file_ending = "data/*.fas*",
-        temp = "temp/temp_sequences.fasta",
         date_last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
     shell:
         """
-        touch {params.temp} && rm {params.temp}
-        cat {params.file_ending} > {params.temp}
-        python scripts/update_sequences.py --in_seq {params.temp} --out_seq {output.sequences} --dates {params.date_last_updated} \
-        --local_accession {params.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
-        --ingest_seqs {input.sequences}
-        rm {params.temp}
-        awk '/^>/{{if (seen[$1]++ == 0) print; next}} !/^>/{{print}}' {output.sequences} > {params.temp} && mv {params.temp} {output.sequences}
+        set -euo pipefail
+        # use bash nullglob so missing globs are ignored
+        shopt -s nullglob
+
+        mkdir -p temp
+        tmpdir=$(mktemp -d temp/update_seq.XXXXXX)
+        tmp="$tmpdir/merged_sequences.fasta"
+        dedup="$tmpdir/dedup_sequences.fasta"
+        trap 'rm -rf "$tmpdir"' EXIT
+
+        # Concatenate ingest sequences + any additional fasta files (if present)
+        cat {input.sequences} {params.file_ending} > "$tmp"
+
+        python scripts/update_sequences.py --in_seq "$tmp" --dates {params.date_last_updated} \
+            --local_accession {params.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
+            --ingest_seqs {input.sequences} --out_seq {output.sequences}
+
+        # Deduplicate FASTA headers (keep first occurrence) and atomically replace
+        awk '/^>/{{ if (seen[$1]++ == 0) print; next }} !/^>/{{ print }}' {output.sequences} > "$dedup" && mv "$dedup" {output.sequences}
         """
 
 
@@ -439,47 +457,47 @@ rule align:
 
 # potentially add one-by-one genes
 # use wildcards
-rule sub_alignments:
-    input:
-        alignment=rules.align.output.alignment,
-        reference=files.reference
-    output:
-        alignment = "{seg}/results/aligned{gene}.fasta"
-    benchmark:
-        "benchmark/sub_alignments.{seg}{gene}.log"
-    run:
-        from Bio import SeqIO
-        from Bio.Seq import Seq
+# rule sub_alignments:
+#     input:
+#         alignment=rules.align.output.alignment,
+#         reference=files.reference
+#     output:
+#         alignment = "{seg}/results/aligned{gene}.fasta"
+#     benchmark:
+#         "benchmark/sub_alignments.{seg}{gene}.log"
+#     run:
+#         from Bio import SeqIO
+#         from Bio.Seq import Seq
 
-        real_gene = wildcards.gene.replace("-", "", 1)
+#         real_gene = wildcards.gene.replace("-", "", 1)
 
-        # Extract boundaries from the reference GenBank file
-        gene_boundaries = {}
-        with open(input.reference) as handle:
-            for record in SeqIO.parse(handle, "genbank"):
-                for feature in record.features:
-                    if feature.type == "CDS" and 'Name' in feature.qualifiers:
-                        product = feature.qualifiers['Name'][0].upper()
-                        if product == real_gene.upper():
-                            # Corrected: Use .start and .end directly
-                            gene_boundaries[product] = (feature.location.start, feature.location.end)
+#         # Extract boundaries from the reference GenBank file
+#         gene_boundaries = {}
+#         with open(input.reference) as handle:
+#             for record in SeqIO.parse(handle, "genbank"):
+#                 for feature in record.features:
+#                     if feature.type == "CDS" and 'Name' in feature.qualifiers:
+#                         product = feature.qualifiers['Name'][0].upper()
+#                         if product == real_gene.upper():
+#                             # Corrected: Use .start and .end directly
+#                             gene_boundaries[product] = (feature.location.start, feature.location.end)
 
-        if real_gene.upper() not in gene_boundaries:
-            raise ValueError(f"Gene {real_gene} not found in reference file.")
+#         if real_gene.upper() not in gene_boundaries:
+#             raise ValueError(f"Gene {real_gene} not found in reference file.")
 
-        b = gene_boundaries[real_gene.upper()]
+#         b = gene_boundaries[real_gene.upper()]
 
-        alignment = SeqIO.parse(input.alignment, "fasta")
-        with open(output.alignment, "w") as oh:
-            for record in alignment:
-                sequence = Seq(record.seq)
-                gene_keep = sequence[b[0]:b[1]]
-                if set(gene_keep) in [{"N"}, {"-"}, set()]:
-                    continue  # Skip sequences that are entirely masked
-                sequence = len(sequence) * "-"
-                sequence = sequence[:b[0]] + gene_keep + sequence[b[1]:]
-                record.seq = Seq(sequence)
-                SeqIO.write(record, oh, "fasta")
+#         alignment = SeqIO.parse(input.alignment, "fasta")
+#         with open(output.alignment, "w") as oh:
+#             for record in alignment:
+#                 sequence = Seq(record.seq)
+#                 gene_keep = sequence[b[0]:b[1]]
+#                 if set(gene_keep) in [{"N"}, {"-"}, set()]:
+#                     continue  # Skip sequences that are entirely masked
+#                 sequence = len(sequence) * "-"
+#                 sequence = sequence[:b[0]] + gene_keep + sequence[b[1]:]
+#                 record.seq = Seq(sequence)
+#                 SeqIO.write(record, oh, "fasta")
 
 ##############################
 # Tree building
@@ -490,8 +508,8 @@ rule tree:
         Creating a maximum likelihood tree
         """
     input:
-        # alignment = rules.align.output.alignment,
-        alignment = rules.sub_alignments.output.alignment
+        alignment = rules.align.output.alignment,
+        # alignment = rules.sub_alignments.output.alignment
     output:
         # tree = "{seg}/results/tree_raw.nwk"
         tree = "{seg}/results/tree_raw{gene}.nwk"
@@ -521,8 +539,8 @@ rule refine:
         """
     input:
         tree = rules.tree.output.tree,
-        # alignment = rules.align.output.alignment,
-        alignment = rules.sub_alignments.output.alignment,
+        alignment = rules.align.output.alignment,
+        # alignment = rules.sub_alignments.output.alignment,
         metadata =  rules.add_metadata.output.metadata,
     output:
         # tree = "{seg}/results/tree.nwk",
@@ -532,7 +550,7 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 6, # was 3
+        clock_filter_iqd = 3, # was 3
         strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
@@ -560,7 +578,8 @@ rule ancestral:
     message: "Reconstructing ancestral sequences and mutations"
     input:
         tree = rules.refine.output.tree,
-        alignment = rules.sub_alignments.output.alignment,
+        alignment = rules.align.output.alignment,
+        # alignment = rules.sub_alignments.output.alignment,
         annotation = files.reference,
     output:
         node_data = "{seg}/results/muts{gene}.json",
@@ -667,7 +686,7 @@ rule clade_published:
     input:
         metadata = rules.add_metadata.output.metadata,
         subgenotypes = "data/clades_vp1.tsv",
-        rivm_data = "data/rivm/subgenotypes_rivm.csv",
+        rivm_data = "data/subgenotypes_rivm.csv",
         alignment="vp1/results/aligned.fasta"
     params:
         strain_id_field= config["id_field"]
@@ -709,6 +728,9 @@ rule clade_published:
 
         # add url with genbank accession
         final_meta['url'] = "https://www.ncbi.nlm.nih.gov/nuccore/" + final_meta['accession']
+
+        final_meta.rename(columns={"has_age":"Age available"}, inplace=True)
+        final_meta.rename(columns={"has_diagnosis":"Diagnosis available"}, inplace=True)
         
         # Save the merged dataframe to the output file
         final_meta.to_csv(output.final_metadata, sep="\t", index=False)
@@ -777,28 +799,32 @@ rule rename_genes:
         """
 
 rule clean:
-    message: "Removing directories: {params}"
+    message: 
+        """
+        Removing previous results and temporary files in the following directories:
+        {params.targets}
+        """
     params:
-        "*/results/*",
-        "auspice/*.json",
-        "ingest/data/*.*",
-        "temp/*",
-        "logs/*",
-        "benchmark/*",
-        files.METADATA,
-        files.SEQUENCES,
-        "data/curated/*",
-        "data/all_sequences.fasta",
-        "data/all_metadata.tsv",
-        "data/final_metadata.tsv",
-        "*/logs/*",
-    shell:
-        "rm {params}"
+        targets = [
+            "*/results/*",
+            "auspice/*.json",
+            "ingest/data/*.*",
+            "temp/*",
+            "logs/*",
+            "benchmark/*",
+            "data/fetch/*",
+        ]
+    shell: 
+        """
+        for dir in {params.targets}; do
+            rm -rf "$dir" 2>/dev/null || true
+        done
+        """
 
 rule upload: ## make sure you're logged in to Nextstrain
     message: "Uploading auspice JSONs to Nextstrain"
     input:
-        jsons = glob.glob("auspice/*.json"),
+        jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
         # jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
         #          "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
     params:
@@ -806,11 +832,11 @@ rule upload: ## make sure you're logged in to Nextstrain
         date=UPLOAD_DATE,
     shell:
         """
-        nextstrain login
+        nextstrain login --no-prompt
         nextstrain remote upload \
             nextstrain.org/groups/{params.remote_group}/ \
             {input.jsons}
-
+        nextstrain logout
         mkdir -p auspice/{params.date}
         cp {input.jsons} auspice/{params.date}/
         """
