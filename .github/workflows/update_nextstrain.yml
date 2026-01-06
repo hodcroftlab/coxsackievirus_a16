@@ -21,26 +21,37 @@ jobs:
           path: data-source
 
       - name: Copy CVA16 data to correct location
-        run: |
-          # Copy all CVA16-specific data
-          cp data-source/cva16/meta_public.tsv data/ || echo "meta_public.tsv not found"
-          cp data-source/cva16/meta_collab. tsv data/ || echo "meta_collab.tsv not found"
-          cp data-source/cva16/sequences.fasta data/ || echo "sequences.fasta not found"
+        run:  |
+          # Create data directory if it doesn't exist
+          mkdir -p data
           
-          # If you have curated data too
-          mkdir -p data/curated
-          cp -r data-source/cva16/curated/* data/curated/ || echo "curated folder not found"
+          # Copy all CVA16-specific data
+          if [ -d "data-source/coxsackievirus_a16" ]; then
+            cp -r data-source/coxsackievirus_a16/* data/
+            echo "CVA16 data copied successfully"
+          else
+            echo "ERROR: coxsackievirus_a16 folder not found in nextstrain-builds-data"
+            exit 1
+          fi
           
           # Clean up temporary directory
           rm -rf data-source
           
-          # Verify files exist before proceeding
+          # Verify critical files exist before proceeding
           echo "Files in data/:"
           ls -lh data/
+          
+          # Check for required files
+          required_files=("meta_public.tsv" "meta_collab.tsv" "subgenotypes_rivm.csv" "clades_vp1.tsv" "strain_names_previous_run.tsv")
+          for file in "${required_files[@]}"; do
+            if [ ! -f "data/$file" ]; then
+              echo "⚠️  Warning: $file not found in data/"
+            fi
+          done
 
       - name:  Set up Conda
         uses:  conda-incubator/setup-miniconda@v3
-        with:
+        with: 
           auto-update-conda: true
           python-version: "3.9"
           activate-environment: nextstrain
@@ -53,32 +64,33 @@ jobs:
 
       - name: Run full pipeline
         shell: bash -l {0}
-        env: 
-          REMOTE_GROUP: ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
+        env:  
+          REMOTE_GROUP:  ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
         run:  |
           snakemake --cores 10 next_update \
             --use-conda \
             --rerun-incomplete \
-            --printshellcmds
+            --printshellcmds 
 
       - name: Upload to Nextstrain
         shell: bash -l {0}
+        if: success()  # Only run if pipeline succeeded
         env: 
-          NEXTSTRAIN_LOGIN_TOKEN: ${{ secrets. NEXTSTRAIN_LOGIN_TOKEN }}
+          NEXTSTRAIN_USERNAME: ${{ secrets.NEXTSTRAIN_USERNAME }}
+          NEXTSTRAIN_PASSWORD: ${{ secrets.NEXTSTRAIN_PASSWORD }}
           REMOTE_GROUP: ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
         run: |
-          mkdir -p ~/. nextstrain
-          echo "nextstrain_login_token: ${NEXTSTRAIN_LOGIN_TOKEN}" > ~/.nextstrain/cli.config
-          snakemake --cores 1 upload
+          snakemake --cores 2 upload
 
-      - name:  Commit and Push Results
+      - name:   Commit and Push Results
         shell:  bash -l {0}
+        if: success()  # Only push if everything succeeded
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users. noreply.github.com"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git pull origin automatic-updates
           git add auspice/
-          git commit -m "chore: update CVA16 builds [skip ci]" || echo "No changes to commit"
+          git commit -m "chore:  update CVA16 builds [skip ci]" || echo "No changes to commit"
           git push origin automatic-updates
 
       - name: Upload workflow artifacts (optional)

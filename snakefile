@@ -22,7 +22,7 @@ try:
 except:
     pass
 REMOTE_GROUP = os.getenv("REMOTE_GROUP")
-UPLOAD_DATE = os.getenv("UPLOAD_DATE") or date.today().isoformat()
+UPLOAD_DATE = date.today().isoformat()
 
 DOWNLOAD_INGEST=True
 
@@ -832,11 +832,11 @@ rule upload: ## make sure you're logged in to Nextstrain
         date=UPLOAD_DATE,
     shell:
         """
-        nextstrain login
+        nextstrain login --no-prompt
         nextstrain remote upload \
             nextstrain.org/groups/{params.remote_group}/ \
             {input.jsons}
-
+        nextstrain logout
         mkdir -p auspice/{params.date}
         cp {input.jsons} auspice/{params.date}/
         """

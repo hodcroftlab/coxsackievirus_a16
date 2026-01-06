@@ -4,11 +4,10 @@ channels:
   - bioconda
 dependencies:
   # Core Python dependencies
-  - python =3.9
+  - python=3.9
   - biopython
   - augur
   - auspice
-  - nextclade
   - csvtk
   - seqkit
   - tsv-utils
@@ -18,3 +17,15 @@ dependencies:
   - nextstrain-cli
   - ncbi-datasets-cli >=16.29.0
   - snakemake=7
+  - cvxopt
+  - datrie
+  - fasttree
+  - iqtree
+  - mafft=7.471
+  - nextclade>=3
+  - pandas
+  - psutil
+  - nodejs=10
+  - raxml
+  - vcftools
+  - git
