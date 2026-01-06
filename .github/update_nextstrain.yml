@@ -8,14 +8,38 @@ jobs:
   pipeline:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name:  Checkout code repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Checkout data repository
+        uses: actions/checkout@v4
+        with:
+          repository: hodcroftlab/nextstrain-builds-data
+          token: ${{ secrets.PRIVATE_REPO_TOKEN }}
+          path: data-source
+
+      - name: Copy CVA16 data to correct location
+        run: |
+          # Copy all CVA16-specific data
+          cp data-source/cva16/meta_public.tsv data/ || echo "meta_public.tsv not found"
+          cp data-source/cva16/meta_collab. tsv data/ || echo "meta_collab.tsv not found"
+          cp data-source/cva16/sequences.fasta data/ || echo "sequences.fasta not found"
+          
+          # If you have curated data too
+          mkdir -p data/curated
+          cp -r data-source/cva16/curated/* data/curated/ || echo "curated folder not found"
+          
+          # Clean up temporary directory
+          rm -rf data-source
+          
+          # Verify files exist before proceeding
+          echo "Files in data/:"
+          ls -lh data/
+
+      - name:  Set up Conda
+        uses:  conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
           python-version: "3.9"
@@ -25,42 +49,42 @@ jobs:
       - name: Clean previous results
         shell: bash -l {0}
         run: |
-          snakemake --cores 1 clean || echo "Clean rule completed (some files may not exist)"
+          snakemake --cores 1 clean || echo "Clean completed"
 
-      - name: Run pipeline
+      - name: Run full pipeline
         shell: bash -l {0}
-        env:
-          REMOTE_GROUP: ${{ secrets. NEXTSTRAIN_REMOTE_GROUP }}
-          UPLOAD_DATE: ${{ env.GITHUB_RUN_DATE }}
+        env: 
+          REMOTE_GROUP: ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
         run:  |
           snakemake --cores 10 next_update \
             --use-conda \
-            --rerun-incomplete
+            --rerun-incomplete \
+            --printshellcmds
 
       - name: Upload to Nextstrain
-        shell:  bash -l {0}
-        env:
-          NEXTSTRAIN_LOGIN_TOKEN: ${{ secrets.NEXTSTRAIN_LOGIN_TOKEN }}
-          REMOTE_GROUP: ${{ secrets. NEXTSTRAIN_REMOTE_GROUP }}
+        shell: bash -l {0}
+        env: 
+          NEXTSTRAIN_LOGIN_TOKEN: ${{ secrets. NEXTSTRAIN_LOGIN_TOKEN }}
+          REMOTE_GROUP: ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
         run: |
-          # Create .nextstrain/cli config for non-interactive auth
           mkdir -p ~/. nextstrain
-          echo "nextstrain_login_token: ${NEXTSTRAIN_LOGIN_TOKEN}" > ~/.nextstrain/cli. config
-          
-          # Run upload
+          echo "nextstrain_login_token: ${NEXTSTRAIN_LOGIN_TOKEN}" > ~/.nextstrain/cli.config
           snakemake --cores 1 upload
 
       - name:  Commit and Push Results
-        shell: bash -l {0}
+        shell:  bash -l {0}
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.email "github-actions[bot]@users. noreply.github.com"
           git pull origin automatic-updates
           git add auspice/
           git commit -m "chore: update CVA16 builds [skip ci]" || echo "No changes to commit"
           git push origin automatic-updates
 
-      - name:  Notify on failure
-        if: failure()
-        run: |
-          echo "Pipeline failed!  Check the logs at: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - name: Upload workflow artifacts (optional)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name:  pipeline-results
+          path: auspice/
+          retention-days: 30

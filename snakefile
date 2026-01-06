@@ -728,6 +728,9 @@ rule clade_published:
 
         # add url with genbank accession
         final_meta['url'] = "https://www.ncbi.nlm.nih.gov/nuccore/" + final_meta['accession']
+
+        final_meta.rename(columns={"has_age":"Age available"}, inplace=True)
+        final_meta.rename(columns={"has_diagnosis":"Diagnosis available"}, inplace=True)
         
         # Save the merged dataframe to the output file
         final_meta.to_csv(output.final_metadata, sep="\t", index=False)
