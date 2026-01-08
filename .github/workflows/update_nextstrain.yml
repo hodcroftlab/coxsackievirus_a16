@@ -1,10 +1,8 @@
 name: Monthly CVA16 Pipeline Run
-on: 
+on:
   workflow_dispatch:  # Manual trigger for testing
-    branches:
-      - automatic-updates  # Specify branch for manual trigger
   schedule:
-    - cron:  '0 0 1 * *'  # 1st of month, midnight UTC
+    - cron: '0 0 1 * *'  # 1st of month, midnight UTC
   push:
     branches:
       - automatic-updates  # Only run on this branch
@@ -72,6 +70,7 @@ jobs:
         shell: bash -l {0}
         env:  
           REMOTE_GROUP:  ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
+          ENTREZ_EMAIL: ${{ secrets.ENTREZ_EMAIL }}  # Add this line
         run:  |
           snakemake --cores 10 next_update \
             --use-conda \
