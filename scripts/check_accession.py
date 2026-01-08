@@ -9,9 +9,18 @@ import time
 
 # Function to check if an accession number is real: it uses the entrez functionality of ncbi
 def extract_accession(name, extract="accession"):
+    # Try to load from .env file (for local development)
     load_dotenv(find_dotenv())
-    Entrez.email = os.environ.get("EMAIL")
+    
+    # Get email from environment variable (works for both local .env and GitHub Actions)
+    email = os.environ.get("EMAIL") or os.environ.get("ENTREZ_EMAIL")
+    
+    if not email:
+        raise ValueError("EMAIL or ENTREZ_EMAIL environment variable not set")
+    
+    Entrez.email = email
     # email address should be stored in an .env file in the base directory, in the format EMAIL=user@email.com
+    # OR as a GitHub Secret named ENTREZ_EMAIL
     
     # Define the API endpoint and parameters
     url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
