@@ -7,7 +7,6 @@
 # To run a default whole genome run ( <6400bp):
 # snakemake whole_genome/auspice/coxsackievirus_A16_whole_genome.json --cores 1
 
-from dotenv import load_dotenv
 import os
 from datetime import date
 
@@ -18,9 +17,11 @@ if not config:
 # Load environment variables
 # Try to load .env, but don't fail if it doesn't exist (for Actions)
 try:
+    from dotenv import load_dotenv
     load_dotenv(".env")
 except:
     pass
+
 REMOTE_GROUP = os.getenv("REMOTE_GROUP")
 UPLOAD_DATE = date.today().isoformat()
 
@@ -83,6 +84,8 @@ rule next_update:
         # Add gene-specific builds if needed: 
         # expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES)
 
+    threads: workflow.cores
+
 
 ##############################
 # Download from NBCI Virus with ingest snakefile
@@ -123,32 +126,32 @@ rule update_strain_names:
         cp {output.file_out} {params.backup}
         """
 
-# This rule is very slow. Only give accessions as input where you are certain that they have GenBank metadata.
-rule fetch_metadata:
-    message:
-        """
-        Retrieving GenBank metadata for the specified accessions.
-        """
-    input:
-        accessions="data/metadata/FRA.txt",
-        config="config/config.yaml" # include symptom list and isolation source mapping
-    output:
-        metadata="data/metadata/FRA.tsv",
-    params:
-        virus="Coxsackievirus A10",
-        genbank_metadata="data/genbank_metadata.tsv"
-    log:
-        "logs/fetch_metadata.log"
-    shell:
-        """
-        python scripts/fetch_genbank_metadata.py \
-            --virus "{params.virus}" \
-            --accession_file {input.accessions} \
-            --output {output.metadata} \
-            --genbank {params.genbank_metadata} \
-            --config {input.config} \
-            2> {log}
-        """
+# # This rule is very slow. Only give accessions as input where you are certain that they have GenBank metadata.
+# rule fetch_metadata:
+#     message:
+#         """
+#         Retrieving GenBank metadata for the specified accessions.
+#         """
+#     input:
+#         accessions="data/metadata/FRA.txt",
+#         config="config/config.yaml" # include symptom list and isolation source mapping
+#     output:
+#         metadata="data/metadata/FRA.tsv",
+#     params:
+#         virus="Coxsackievirus A10",
+#         genbank_metadata="data/genbank_metadata.tsv"
+#     log:
+#         "logs/fetch_metadata.log"
+#     shell:
+#         """
+#         python scripts/fetch_genbank_metadata.py \
+#             --virus "{params.virus}" \
+#             --accession_file {input.accessions} \
+#             --output {output.metadata} \
+#             --genbank {params.genbank_metadata} \
+#             --config {input.config} \
+#             2> {log}
+#         """
 
 ##############################
 # Change the format of the dates in the metadata
