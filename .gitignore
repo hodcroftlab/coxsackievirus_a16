@@ -12,6 +12,7 @@ ingest/logs/
 */results/
 */temp/
 ingest/data/*.*
+auspice/*
 
 *.code-workspace
 
@@ -29,7 +30,6 @@ benchmark
 logs
 
 # data to include
-!/auspice/2025-12-30/
 !/data/date_last_updated.txt
 !/data/local_accn.txt
 !/data/references
