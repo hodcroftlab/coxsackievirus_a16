@@ -29,3 +29,9 @@ dependencies:
   - raxml
   - vcftools
   - git
+  - python-dotenv
+  - numpy
+  - pyyaml
+  - fuzzywuzzy
+  - python-levenshtein
+  - requests
