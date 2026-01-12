@@ -1,11 +1,18 @@
 # Coxsackievirus A16 Nextstrain Analysis
 
-This repository provides a comprehensive Nextstrain analysis of Coxsackievirus A16. You can choose to perform either a **VP1 run (>=600 base pairs)** or a **whole genome run (>=6400 base pairs)**.
+This repository provides a comprehensive Nextstrain analysis of Coxsackievirus A16. You can choose to perform either a **VP1 run (>=600 base pairs)** or a **whole genome run (>=6400 base pairs)**. \
+Live Nextstrain build can be found under [VP1](https://nextstrain.org/groups/hodcroftlab/coxsackievirus/A16/vp1) or [whole-genome](https://nextstrain.org/groups/hodcroftlab/coxsackievirus/A16/whole-genome).
 
 For those unfamiliar with Nextstrain or needing installation guidance, please refer to the [Nextstrain documentation](https://docs.nextstrain.org/en/latest/).
 
 ### Enhancing the Analysis
 Most of the data for this analysis can be obtained from [NCBI Virus](https://www.ncbi.nlm.nih.gov/labs/virus/vssi/#/). Instructions for downloading sequences are provided at the end of this README under [Sequences](#sequences). 
+
+
+> [!IMPORTANT] 
+> - All GitHub Actions "monthly runs" and their automatically generated commits live in the automatic-update branch.
+>- Inspect scheduled workflows or the generated commits on that branch: switch to `automatic-update` locally or view `.github/workflows/` on that branch in the GitHub UI.
+>- If you are modifying scheduled automation, open PRs targeting `automatic-update` (unless you explicitly want changes applied to the default branch immediately).
 
 ## Repository Organization
 This repository includes the following directories and files:
@@ -35,63 +42,74 @@ The reference sequence used is [G-10, accession number U05876](https://www.ncbi.
 #### Nextstrain Environment
 Install the Nextstrain environment by following [these instructions](https://docs.nextstrain.org/en/latest/guides/install/local-installation.html).
 
-### Running a Build
 
-Activate the Nextstrain environment:
-```
-conda activate nextstrain
-```
+1. Generate reference files (one-time / when updating references)
+   - Use helper to fetch GenBank-based reference files used by ingest:
+     ```
+     python3 ingest/generate_from_genbank.py --reference "U05876.1" --output-dir "whole_genome/config/"
+     ```
+   - For Enteroviruses, you'll get the CDS usually with: [0];[product];[2].
+   - Output appears in `data/references/` and is consumed by `ingest` rules.
+   - Check `data/references/pathogen.json` attributes for correctness.
 
-To perform a build, run:
-```
-snakemake --cores 1
-```
+2. Run ingest (produces data/metadata.tsv and data/sequences.fasta)
+   - Make vendored scripts executable if needed:
+     ```
+     chmod +x ./ingest/vendored/* ./ingest/bin/*
+     ```
+   - Run ingest via its Snakefile or via the main Snakefile:
+     ```
+     cd ingest
+     snakemake all --cores 1
+     ```
+     or
+     ```
+     snakemake all --cores 1
+     ```
+     (See targets below for building specific outputs.)
 
-For specific builds:
-- VP1 build:
-    ```
-    snakemake auspice/cv_a16_vp1.json --cores 1
-    ```
-- Whole genome build:
-    ```
-    snakemake auspice/cv_a16_whole_genome.json --cores 1
-    ```
+3. Build specific Nextstrain outputs
+   - VP1 (example target name — adapt to repo targets):
+     ```
+     snakemake  auspice/coxsackievirus_A16_vp1.json --cores 9
+     ```
+   - Whole genome:
+     ```
+     snakemake  auspice/coxsackievirus_A16_whole-genome.json --cores 9
+     ```
 
-### First steps
-To run the ingest, you will need some specific reference files, such as a `reference.fasta` or `annotation.gff3` file.
-1. In the `config` file: check that the taxid is correct
-2. To get these files you have to run the script [generate_from_genbank.py](ingest/bin/generate_from_genbank.py) manually. 
-    ```
-    python3 ingest/generate_from_genbank.py --reference "U05876.1" --output-dir "whole_genome/config/"
-    ```
-    - You need to specify a few things: [0];[product];[2].
-    - It will create the files in the subdirectory `data/references`. 
-    - These files will be used by the `ingest` snakefile.
-3. Check that the `attributes` in `data/references/pathogen.json` are up to date.
-4. Run the `ingest' snakefile (either manually or using the main snakefile).
-    - Depending on your system you may need to run `chmod +x ./vendored/*; chmod +x ./bin/*` first.
-5. Run the main snakefile.
+4. Visualize locally with Auspice
+   ```
+   auspice view --datasetDir auspice
+   ```
+   - To run multiple views, change PORT:
+     ```
+     export PORT=4001
+     ```
 
-### Visualizing the Build
-To visualize the build, use Auspice:
-```
-auspice view --datasetDir auspice
-```
-To run two visualizations simultaneously, you may need to set the port:
-```
-export PORT=4001
-```
+## Notes & tips
+- Snakemake targets: inspect the Snakefile to find exact `auspice/` output filenames used in this repo.
+- `generate_from_genbank.py` requires specifying feature/product indices used by the script — double-check the script CLI help if you see parsing errors.
+- Keep `automatic-update` branch separate for scheduled workflows to avoid accidental merges from automation commits.
 
 ### Sequences
-Sequences can be downloaded manually or automatically.
+- Manual: NCBI Virus (search `CVA16` or Taxid `31704`): https://www.ncbi.nlm.nih.gov/labs/virus/vssi/#/
+- Automated: use the `ingest` pipeline (see repository `ingest/` & vendored helpers).
 
-1. **Manual Download**: Visit [NCBI Virus](https://www.ncbi.nlm.nih.gov/labs/virus/vssi/#/), search for `CVA16` or Taxid `31704`, and download the sequences.
-2. **Automated Download**: The `ingest` functionality, included in the main `snakefile`, handles automatic downloading.
+### Vendored scripts
+- Vendoring is managed via `git subrepo`. To update vendored ingest scripts:
+  - Install git-subrepo per its docs and follow instructions in `ingest/vendored/README.md`.
 
-The ingest pipeline is based on the Nextstrain [RSV ingest workflow](https://github.com/nextstrain/rsv.git). Running the **ingest** pipeline produces `data/metadata.tsv` and `data/sequences.fasta`.
+## Contributing & maintenance
+- For changes to scheduled automated updates: PR -> `automatic-update`.
+- For code/pipeline/data changes: open PRs against the default branch (or discuss in issues first for large changes).
+- For questions: open an [issue](https://github.com/hodcroftlab/coxsackievirus_a16/issues) or contact the maintainers.
 
-### Updating Vendored Scripts
-This repository uses [`git subrepo`](https://github.com/ingydotnet/git-subrepo) to manage copies of ingest scripts in `ingest/vendored`. To pull new changes from the central ingest repository, first install `git subrepo` and then follow the instructions in [ingest/vendored/README.md](./ingest/vendored/README.md#vendoring).
+## References
+- Nextstrain docs: https://docs.nextstrain.org/en/latest/
+- Live build: https://nextstrain.org/groups/hodcroftlab/coxsackievirus/A16/vp1
+- Reference sequence (G-10, U05876): https://www.ncbi.nlm.nih.gov/nuccore/U05876
 
-## Feedback
-For questions or comments, contact me via GitHub or [nadia.neuner-jehle@swisstph.ch](mailto:nadia.neuner-jehle@swisstph.ch).
+## Contact
+- https://eve-lab.org/
+- For data/pipeline queries: nadia.neuner-jehle[at]swisstph.ch

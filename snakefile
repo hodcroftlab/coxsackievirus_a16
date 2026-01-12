@@ -2,10 +2,10 @@
 # Snakemake execution templates:
 
 # To run a default VP1 run(<600bp):
-# snakemake  vp1/auspice/coxsackievirus_A16_vp1.json --cores 1
+# snakemake  auspice/coxsackievirus_A16_vp1.json --cores 9
 
 # To run a default whole genome run ( <6400bp):
-# snakemake whole_genome/auspice/coxsackievirus_A16_whole_genome.json --cores 1
+# snakemake auspice/coxsackievirus_A16_whole_genome.json --cores 9
 
 import os
 from datetime import date
