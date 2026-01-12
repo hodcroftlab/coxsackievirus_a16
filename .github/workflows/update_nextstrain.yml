@@ -4,14 +4,14 @@ on:
   schedule:
     - cron: '0 0 1 * *'  # 1st of month, midnight UTC
   push:
-    branches:
+    branches: 
       - automatic-updates  # Only run on this branch
 
 jobs:
   pipeline:
     runs-on: ubuntu-latest
     steps:
-      - name:  Checkout code repository
+      - name: Checkout code repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -19,7 +19,7 @@ jobs:
 
       - name: Checkout data repository
         uses: actions/checkout@v4
-        with:
+        with: 
           repository: hodcroftlab/nextstrain-builds-data
           token: ${{ secrets.PRIVATE_REPO_TOKEN }}
           path: data-source
@@ -53,41 +53,43 @@ jobs:
             fi
           done
 
-      - name: Install micromamba
-        uses: micromamba/micromamba-action@v1
+      - name:  Setup micromamba
+        uses:  mamba-org/setup-micromamba@v2
         with:
-          micromamba-version: latest
-
-      - name: Create environment with micromamba (fast)
-        run: |
-          micromamba create -y -n nextstrain -f environment.yaml
+          environment-file: environment.yaml
+          environment-name: nextstrain
+          init-shell: bash
+          cache-environment: true
+          post-cleanup: 'all'
 
       - name: Clean previous results
         run: |
-          micromamba run -n nextstrain -- snakemake --cores 1 clean || echo "Clean completed"
+          snakemake --cores 1 clean || echo "Clean completed"
+        shell:  micromamba-shell {0}
 
       - name: Run full pipeline
         env:  
           REMOTE_GROUP: ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
           ENTREZ_EMAIL: ${{ secrets.ENTREZ_EMAIL }}
         run: |
-          micromamba run -n nextstrain -- snakemake --cores 10 next_update \
+          snakemake --cores 10 next_update \
             --use-conda \
             --rerun-incomplete \
             --printshellcmds
+        shell: micromamba-shell {0}
 
-      - name: Upload to Nextstrain
+      - name:  Upload to Nextstrain
         if: success()
         env: 
           NEXTSTRAIN_USERNAME: ${{ secrets.NEXTSTRAIN_USERNAME }}
           NEXTSTRAIN_PASSWORD: ${{ secrets.NEXTSTRAIN_PASSWORD }}
-          REMOTE_GROUP: ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
+          REMOTE_GROUP:  ${{ secrets.NEXTSTRAIN_REMOTE_GROUP }}
         run: |
-          micromamba run -n nextstrain -- snakemake --cores 2 upload
-          
-      - name:   Commit and Push Results
-        shell:  bash -l {0}
-        if: success()  # Only push if everything succeeded
+          snakemake --cores 2 upload
+        shell: micromamba-shell {0}
+
+      - name:  Commit and Push Results
+        if: success()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -95,11 +97,12 @@ jobs:
           git add auspice/
           git commit -m "chore:  update CVA16 builds [skip ci]" || echo "No changes to commit"
           git push origin automatic-updates
+        shell: bash -l {0}
 
       - name: Upload workflow artifacts (optional)
         if: always()
         uses: actions/upload-artifact@v4
-        with:
+        with: 
           name:  pipeline-results
           path: auspice/
           retention-days: 30
