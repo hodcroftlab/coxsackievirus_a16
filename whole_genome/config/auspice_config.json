@@ -130,7 +130,8 @@
     },
     {
       "key": "abbr_authors",
-      "title": "Authors"
+      "title": "Authors",
+      "type":"categorical"
     }
   ],
   "geo_resolutions": [

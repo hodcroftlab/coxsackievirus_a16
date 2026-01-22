@@ -79,10 +79,8 @@ rule all_genes:
 rule next_update:
     """Final rule to generate all required JSON outputs for a monthly run"""
     input:
-        "auspice/coxsackievirus_A16_vp1.json", 
-        "auspice/coxsackievirus_A16_whole-genome.json",
-        # Add gene-specific builds if needed: 
-        # expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=GENES)
+        expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments),
+        expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=["-vp1", "-3D"]),
 
     threads: workflow.cores
 
@@ -127,31 +125,31 @@ rule update_strain_names:
         """
 
 # # This rule is very slow. Only give accessions as input where you are certain that they have GenBank metadata.
-# rule fetch_metadata:
-#     message:
-#         """
-#         Retrieving GenBank metadata for the specified accessions.
-#         """
-#     input:
-#         accessions="data/metadata/FRA.txt",
-#         config="config/config.yaml" # include symptom list and isolation source mapping
-#     output:
-#         metadata="data/metadata/FRA.tsv",
-#     params:
-#         virus="Coxsackievirus A10",
-#         genbank_metadata="data/genbank_metadata.tsv"
-#     log:
-#         "logs/fetch_metadata.log"
-#     shell:
-#         """
-#         python scripts/fetch_genbank_metadata.py \
-#             --virus "{params.virus}" \
-#             --accession_file {input.accessions} \
-#             --output {output.metadata} \
-#             --genbank {params.genbank_metadata} \
-#             --config {input.config} \
-#             2> {log}
-#         """
+rule fetch_metadata:
+    message:
+        """
+        Retrieving GenBank metadata for the specified accessions.
+        """
+    input:
+        accessions="data/metadata/FRA.txt",
+        config="config/config.yaml" # include symptom list and isolation source mapping
+    output:
+        metadata="data/metadata/FRA.tsv",
+    params:
+        virus="Coxsackievirus A10",
+        genbank_metadata="data/genbank_metadata.tsv"
+    log:
+        "logs/fetch_metadata.log"
+    shell:
+        """
+        python scripts/fetch_genbank_metadata.py \
+            --virus "{params.virus}" \
+            --accession_file {input.accessions} \
+            --output {output.metadata} \
+            --genbank {params.genbank_metadata} \
+            --config {input.config} \
+            2> {log}
+        """
 
 ##############################
 # Change the format of the dates in the metadata
@@ -372,7 +370,7 @@ rule filter:
         reason = "{seg}/results/filter_log.tsv"
     params:
         group_by = "country year",
-        sequences_per_group = 1000, # set lower if you want to have a max sequences per group
+        sequences_per_group = 500, # set lower if you want to have a max sequences per group
         strain_id_field= config["id_field"],
         min_date = 1950,  # G-10 was collected in 1952
         min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400}[wildcards.seg], 
@@ -460,47 +458,47 @@ rule align:
 
 # potentially add one-by-one genes
 # use wildcards
-# rule sub_alignments:
-#     input:
-#         alignment=rules.align.output.alignment,
-#         reference=files.reference
-#     output:
-#         alignment = "{seg}/results/aligned{gene}.fasta"
-#     benchmark:
-#         "benchmark/sub_alignments.{seg}{gene}.log"
-#     run:
-#         from Bio import SeqIO
-#         from Bio.Seq import Seq
+rule sub_alignments:
+    input:
+        alignment=rules.align.output.alignment,
+        reference=files.reference
+    output:
+        alignment = "{seg}/results/aligned{gene}.fasta"
+    benchmark:
+        "benchmark/sub_alignments.{seg}{gene}.log"
+    run:
+        from Bio import SeqIO
+        from Bio.Seq import Seq
 
-#         real_gene = wildcards.gene.replace("-", "", 1)
+        real_gene = wildcards.gene.replace("-", "", 1)
 
-#         # Extract boundaries from the reference GenBank file
-#         gene_boundaries = {}
-#         with open(input.reference) as handle:
-#             for record in SeqIO.parse(handle, "genbank"):
-#                 for feature in record.features:
-#                     if feature.type == "CDS" and 'Name' in feature.qualifiers:
-#                         product = feature.qualifiers['Name'][0].upper()
-#                         if product == real_gene.upper():
-#                             # Corrected: Use .start and .end directly
-#                             gene_boundaries[product] = (feature.location.start, feature.location.end)
+        # Extract boundaries from the reference GenBank file
+        gene_boundaries = {}
+        with open(input.reference) as handle:
+            for record in SeqIO.parse(handle, "genbank"):
+                for feature in record.features:
+                    if feature.type == "CDS" and 'Name' in feature.qualifiers:
+                        product = feature.qualifiers['Name'][0].upper()
+                        if product == real_gene.upper():
+                            # Corrected: Use .start and .end directly
+                            gene_boundaries[product] = (feature.location.start, feature.location.end)
 
-#         if real_gene.upper() not in gene_boundaries:
-#             raise ValueError(f"Gene {real_gene} not found in reference file.")
+        if real_gene.upper() not in gene_boundaries:
+            raise ValueError(f"Gene {real_gene} not found in reference file.")
 
-#         b = gene_boundaries[real_gene.upper()]
+        b = gene_boundaries[real_gene.upper()]
 
-#         alignment = SeqIO.parse(input.alignment, "fasta")
-#         with open(output.alignment, "w") as oh:
-#             for record in alignment:
-#                 sequence = Seq(record.seq)
-#                 gene_keep = sequence[b[0]:b[1]]
-#                 if set(gene_keep) in [{"N"}, {"-"}, set()]:
-#                     continue  # Skip sequences that are entirely masked
-#                 sequence = len(sequence) * "-"
-#                 sequence = sequence[:b[0]] + gene_keep + sequence[b[1]:]
-#                 record.seq = Seq(sequence)
-#                 SeqIO.write(record, oh, "fasta")
+        alignment = SeqIO.parse(input.alignment, "fasta")
+        with open(output.alignment, "w") as oh:
+            for record in alignment:
+                sequence = Seq(record.seq)
+                gene_keep = sequence[b[0]:b[1]]
+                if set(gene_keep) in [{"N"}, {"-"}, set()]:
+                    continue  # Skip sequences that are entirely masked
+                sequence = len(sequence) * "-"
+                sequence = sequence[:b[0]] + gene_keep + sequence[b[1]:]
+                record.seq = Seq(sequence)
+                SeqIO.write(record, oh, "fasta")
 
 ##############################
 # Tree building
@@ -622,24 +620,6 @@ rule ancestral:
 
             # --root-sequence {input.annotation} \  -> assigns mutations to the root relative to the reference, not wanted here
 
-
-# rule translate:
-#     message: "Translating amino acid sequences"
-#     input:
-#         tree = rules.refine.output.tree,
-#         node_data = rules.ancestral.output.node_data,
-#         reference = files.reference
-#     output:
-#         node_data = "{seg}/results/aa_muts{gene}.json"
-#         # node_data = "{seg}/results/aa_muts.json"
-#     shell:
-#         """
-#         augur translate \
-#             --tree {input.tree} \
-#             --ancestral-sequences {input.node_data} \
-#             --reference-sequence {input.reference} \
-#             --output-node-data {output.node_data}
-#         """
 
 ##############################
 # Clade assignment
@@ -827,9 +807,9 @@ rule clean:
 rule upload: ## make sure you're logged in to Nextstrain
     message: "Uploading auspice JSONs to Nextstrain"
     input:
-        jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
-        # jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
-        #          "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
+        # jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
+        jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
+                 "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
     params:
         remote_group=REMOTE_GROUP,
         date=UPLOAD_DATE,
