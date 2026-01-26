@@ -104,25 +104,6 @@ if DOWNLOAD_INGEST==True:
             """
 
 ##############################
-# Update strain names
-###############################
-
-rule update_strain_names:
-    message:
-        """
-        Updating strain name in metadata.
-        """
-    input:
-        file_in =  files.METADATA
-    params:
-        backup = "data/strain_names_previous_run.tsv"
-    output:
-        file_out = "data/updated_strain_names.tsv"
-    shell:
-        """
-        time bash scripts/update_strain.sh {input.file_in} {params.backup} {output.file_out}
-        cp {output.file_out} {params.backup}
-        """
 
 # # This rule is very slow. Only give accessions as input where you are certain that they have GenBank metadata.
 rule fetch_metadata:
@@ -287,7 +268,6 @@ rule add_metadata:
         metadata = files.METADATA,
         new_data = rules.curate.output.meta,
         regions = ancient(files.regions),
-        renamed_strains = rules.update_strain_names.output.file_out
     params:
         strain_id_field = config["id_field"],
         last_updated = files.last_updated_file,
@@ -299,7 +279,6 @@ rule add_metadata:
         python scripts/add_metadata.py \
             --input {input.metadata} \
             --add {input.new_data} \
-            --rename {input.renamed_strains} \
             --local {params.local_accn} \
             --update {params.last_updated}\
             --regions {input.regions} \
@@ -815,7 +794,7 @@ rule upload: ## make sure you're logged in to Nextstrain
         date=UPLOAD_DATE,
     shell:
         """
-        nextstrain login --no-prompt
+        nextstrain login
         nextstrain remote upload \
             nextstrain.org/groups/{params.remote_group}/ \
             {input.jsons}
