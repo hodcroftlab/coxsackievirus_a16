@@ -5,7 +5,7 @@
 # snakemake  auspice/coxsackievirus_A16_vp1.json --cores 9
 
 # To run a default whole genome run ( <6400bp):
-# snakemake auspice/coxsackievirus_A16_whole_genome.json --cores 9
+# snakemake auspice/coxsackievirus_A16_whole-genome.json --cores 9
 
 import os
 from datetime import date
@@ -22,6 +22,7 @@ try:
 except:
     pass
 
+TAXID = "31704"
 REMOTE_GROUP = os.getenv("REMOTE_GROUP")
 UPLOAD_DATE = date.today().isoformat()
 
@@ -44,8 +45,8 @@ CODING_GENES = ["VP4", "VP2", "VP3", "VP1", "2A", "2B", "2C", "3A", "3B", "3C", 
 rule files:
     input:
         sequence_length =   "{seg}",
-        dropped_strains =   "config/dropped_strains.txt",
-        incl_strains =      "config/kept_strains.txt",
+        dropped_strains =   "config/exclude.txt",
+        incl_strains =      "config/include.txt",
         reference =         "{seg}/config/reference_sequence.gb",
         gff_reference =     "{seg}/config/annotation.gff3",
         lat_longs =         "config/lat_longs.tsv",
@@ -216,42 +217,67 @@ rule update_sequences:
 
 ##############################
 # BLAST
-# blast fasta files for vp1 
+# blast fasta files for your specific proteins
+# cut out your protein from fasta sequences
 ###############################
+
+rule extract:
+    input: 
+        genbank_file = files.reference
+    output: 
+        extracted_fasta = "{seg}/config/reference.fasta",    
+        extracted_genbank = "{seg}/config/reference.gbk",
+    params:
+        product_name = "{seg}",
+        taxid = TAXID,
+        annotation = lambda wildcards: f'--output_gff {wildcards.seg}/config/annotation.gff3' if wildcards.seg != "whole_genome" else ""
+
+    shell:
+        """
+        python scripts/extract_gene_from_whole_genome.py \
+        --genbank_file {input.genbank_file} \
+        --output_fasta {output.extracted_fasta} \
+        --product_name {params.product_name} \
+        --output_genbank {output.extracted_genbank} \
+        --taxid {params.taxid} \
+        {params.annotation}
+        """
 
 rule blast:
     input: 
-        blast_db_file = "data/references/reference_vp1_blast.fasta",
-        seqs_to_blast = rules.update_sequences.output.sequences
+        blast_db_file = rules.extract.output.extracted_fasta,  
+        seqs_to_blast = rules.fetch.output.sequences
     output:
-        blast_out = "temp/blast_out.csv"
+        blast_out = "temp/{seg}/blast_out.csv"
     params:
-        blast_db = "temp/blast_database"
+        blast_db =  "temp/{seg}/blast_database"
     shell:
         """
         sed -i 's/-//g' {input.seqs_to_blast}
         makeblastdb -in {input.blast_db_file} -out {params.blast_db} -dbtype nucl
-        blastn -task blastn -query {input.seqs_to_blast} -db {params.blast_db} -outfmt '10 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs' -out {output.blast_out} -evalue 0.0005
+        blastn -task blastn -query {input.seqs_to_blast} -db {params.blast_db} \
+        -outfmt '10 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore qcovs' -out {output.blast_out} -evalue 0.0005
         """
 
 rule blast_sort:
     input:
         blast_result = rules.blast.output.blast_out, # output blast (for your protein)
-        input_seqs = rules.update_sequences.output.sequences
+        input_seqs = rules.fetch.output.sequences
     output:
         sequences = "{seg}/results/sequences.fasta"
         
     params:
-        protein = [600,900], #TODO: min & max length for protein
-        whole_genome = [6400,7450], #TODO: min & max length for whole genome
-        range = "{seg}" # this is determining the path it takes in blast_sort (protein-specific or whole genome)
+        range = "{seg}",  # Determines which protein (or whole genome) is processed
+        min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400}[wildcards.seg],  # Min length
+        max_length = lambda wildcards: {"vp1": 900, "whole_genome": 8000}[wildcards.seg]  # Max length
     shell:
         """
         python scripts/blast_sort.py --blast {input.blast_result} \
-            --protein_length {params.protein}  --whole_genome_length {params.whole_genome} \
             --seqs {input.input_seqs} \
             --out_seqs {output.sequences} \
-            --range {params.range}
+            --range {params.range} \
+            --min_length {params.min_length} \
+            --max_length {params.max_length}
         """
 
 ##############################
@@ -375,30 +401,17 @@ rule filter:
 # Reference sequence &
 # Alignment
 ###############################
-rule reference_gb_to_fasta:
-    message:
-        """
-        Converting reference sequence from genbank to fasta format
-        """
-    input:
-        reference = files.reference
-
-    output:
-        reference = "{seg}/results/reference_sequence.fasta"
-    run:
-        from Bio import SeqIO 
-        SeqIO.convert(input.reference, "genbank", output.reference, "fasta")
-
-
 rule align: 
     message:
         """
+        Segment: {wildcards.seg}
         Aligning sequences to {input.reference} using Nextclade run.
         """
     input:
         gff_reference = files.gff_reference,
         sequences = rules.filter.output.sequences,
-        reference = rules.reference_gb_to_fasta.output.reference
+        reference = rules.extract.output.extracted_fasta,
+
     output:
         alignment = "{seg}/results/aligned.fasta",
         tsv = "{seg}/results/nextclade.tsv",    
@@ -429,7 +442,7 @@ rule align:
         --min-match-length {params.min_match_length} \
         --allowed-mismatches {params.allowed_mismatches} \
         --min-length {params.min_length} \
-        --include-reference false \
+        --include-reference true \
         --output-tsv {output.tsv} \
         --output-translations "{wildcards.seg}/results/translations/cds_{{cds}}.translation.fasta" \
         --output-fasta {output.alignment}
@@ -485,6 +498,7 @@ rule sub_alignments:
 rule tree:
     message:
         """
+        Segment: {wildcards.seg} {wildcards.gene}
         Creating a maximum likelihood tree
         """
     input:
@@ -511,6 +525,7 @@ rule tree:
 rule refine:
     message:
         """
+        Segment: {wildcards.seg} {wildcards.gene}
         Refining tree by rerooting and resolving polytomies
           - estimate timetree
           - use {params.coalescent} coalescent timescale
@@ -530,11 +545,13 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 3, # was 3
+        clock_filter_iqd = 8, # was 3
         strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
         # clock_rate_string = lambda wildcards: f"--clock-rate 0.004 --clock-std-dev 0.0015" if wildcards.gene or wildcards.quart else ""
+    log:
+        "logs/refine.{seg}{gene}.log"
     shell:
         """
         augur refine \
@@ -547,12 +564,17 @@ rule refine:
             --timetree \
             --coalescent {params.coalescent} \
             --date-confidence \
+            --stochastic-resolve \
             --clock-rate {params.clock_rate}\
             --clock-std-dev {params.clock_std_dev} \
             --date-inference {params.date_inference} \
-            --clock-filter-iqd {params.clock_filter_iqd}
+            --clock-filter-iqd {params.clock_filter_iqd} \
+            2>&1 | (grep -i "pruning leaf" || cat > /dev/null) > {log}
+
+        echo "Refined tree saved to {output.tree}"
         """
-        
+        #            
+
 
 rule ancestral:
     message: "Reconstructing ancestral sequences and mutations"
@@ -560,7 +582,7 @@ rule ancestral:
         tree = rules.refine.output.tree,
         alignment = rules.align.output.alignment,
         # alignment = rules.sub_alignments.output.alignment,
-        annotation = files.reference,
+        annotation = rules.extract.output.extracted_genbank,
     output:
         node_data = "{seg}/results/muts{gene}.json",
     params:
@@ -649,7 +671,8 @@ rule clade_published:
         metadata = rules.add_metadata.output.metadata,
         subgenotypes = "data/clades_vp1.tsv",
         rivm_data = "data/subgenotypes_rivm.csv",
-        alignment="vp1/results/aligned.fasta"
+        alignment="vp1/results/aligned.fasta",
+        rfs = "data/metadata_JLB_parsed_from_tree.tsv"
     params:
         strain_id_field= config["id_field"]
     output:
@@ -673,6 +696,15 @@ rule clade_published:
 
         # Merge the dataframes on the specified column
         merged_df = pd.merge(metadata_df, subgenotypes_df, on=params.strain_id_field, how="left")
+
+        # Add RFs and subgenotypes from JLB & rename columns
+        rfs_df = pd.read_csv(input.rfs, sep="\t")
+        rfs_df = rfs_df.loc[:, [params.strain_id_field, "genotype", "subgenotype"]]
+        rfs_df.rename(columns={"genotype":"subgenogroup", "subgenotype":"lineage"}, inplace=True)
+
+        # merge data with full_join, no x & y suffixes
+        merged_df = pd.merge(merged_df, rfs_df, on=params.strain_id_field, how="left")
+        merged_df["subgenogroup"] = merged_df['subgenogroup_x'].combine_first(merged_df['subgenogroup_y'])
 
         # Read alignment
         seqs = list(SeqIO.parse(input.alignment, "fasta"))
