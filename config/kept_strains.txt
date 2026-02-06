@@ -1,8 +1,0 @@
-## subgenotype A
-LT617111
-LT617107
-PP585420
-
-## subgenotype B2
-OP562190
-OP562188

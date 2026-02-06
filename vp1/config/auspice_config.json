@@ -28,6 +28,11 @@
       "key": "subgenogroup"
     },
     {
+      "title": "Published Recombination Lineages",
+      "type": "categorical",
+      "key": "lineage"
+    },
+    {
       "title": "RIVM Clades",
       "type": "categorical",
       "key": "RIVM_subgenogroup"

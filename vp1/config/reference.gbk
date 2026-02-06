@@ -1,0 +1,54 @@
+LOCUS       CAU05876                 891 bp    RNA              UNK 14-OCT-1994
+DEFINITION  vp1 gene sequence (Coxsackievirus A16, Coxsackievirus A16 (CV-A16),
+            14-OCT-1994, Accession: U05876.1, Version: 1).
+ACCESSION   U05876.1
+VERSION     U05876.1
+KEYWORDS    .
+SOURCE      Coxsackievirus A16 (CV-A16)
+  ORGANISM  Coxsackievirus A16
+            .
+FEATURES             Location/Qualifiers
+     source          1..891
+                     /organism="Coxsackievirus A16"
+                     /mol_type="genomic RNA"
+                     /strain="G-10"
+                     /host="Homo sapiens"
+                     /db_xref="taxon:31704"
+     gene            <1..>891
+                     /gene="VP1"
+     CDS             <1..>891
+                     /ID="id-AAA50478.1:566..862"
+                     /gbkey="Prot"
+                     /product="VP1"
+                     /codon_start=1
+                     /Name="VP1"
+                     /locus_tag="VP1"
+                     /translation="GDGIADMIDQAVTSRVGRALTSLQVEPTAANTNASEHRLGTGLVP
+                     ALQAAETGASSNAQDENLIETRCVLNHHSTQETTIGNFFSRAGLVSIITMPTTGTQNTD
+                     GYVNWDIDLMGYAQMRRKCELFTYMRFDAEFTFVAAKPNGELVPQLLQYMYVPPGAPKP
+                     TSRDSFAWQTATNPSIFVKLTDPPAQVSVPFMSPASAYQWFYDGYPTFGAHPQSNDADY
+                     GQCPNNMMGTFSIRTVGTEKSPHSITLRVYMRIKHVRAWIPRPLRNQPYLFKTNPNYKG
+                     NDIKCTSTSRDKITTL"
+     source          1..891
+                     /organism="Coxsackievirus A16"
+                     /mol_type="genomic RNA"
+                     /strain="G-10"
+                     /host="Homo sapiens"
+                     /db_xref="taxon:31704"
+ORIGIN
+        1 ggtgatggaa ttgcagacat gattgaccag gctgtcactt cccgagttgg tcgtgcgctg
+       61 acatccttac aggtagaacc taccgccgcc aacaccaatg ctagtgagca cagattgggc
+      121 accgggctcg tccccgcctt gcaggctgca gagaccggcg cctcttctaa tgcacaggat
+      181 gagaatctta tagaaacccg gtgtgtgttg aaccatcact ccactcaaga gaccacgatt
+      241 ggcaactttt tcagtcgagc aggactagtg agtattatta ccatgcccac cacaggtacc
+      301 caaaacaccg atgggtatgt gaactgggat attgacttga tgggttatgc tcaaatgagg
+      361 cgtaagtgtg agctattcac atacatgcgc tttgatgcag agtttacatt tgtagctgcc
+      421 aaaccaaacg gtgagctagt accacaattt gttgcagtac atgtatgtgc ctcccggagc
+      481 tccaaaacct acgtcccggg attcctttgc ctggcagact gctaccaatt cttccatctt
+      541 cgtcaagttg actgaccccc cggcacaagt gtcagtaccc ttcatgtctc ccgccagcgc
+      601 ctaccagtgg ttttacgatg gctatccaac gtttggagcc catccacaat cgaatgacgc
+      661 agactatggc caatgtccaa acaacatgat gggcaccttt agcatcagaa ctgtaggcac
+      721 tgagaaatcc cccattctat cacccttcgg gtgtatatga gaatcaagca tgtcagggcc
+      781 tggatacccc ggcctctcag aaaccaacca taccttttta agacaaatcc aaattataaa
+      841 ggcaacgaca tcaaatgcac cagcacaagt agggacaaaa taacaacact a
+//
