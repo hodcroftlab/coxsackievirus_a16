@@ -1,0 +1,173 @@
+{
+  "title": "Genomic epidemiology of Coxsackievirus A16 - P1",
+  "maintainers": [
+    {"name": "Nadia Neuner-Jehle", "url": "https://eve-lab.org/people/nadia-neuner-jehle/"},
+    {"name": "Emma Hodcroft", "url": "https://eve-lab.org/people/emma-hodcroft/"}
+  ],
+  "data_provenance": [
+    {
+      "name": "GenBank",
+      "url": "https://www.ncbi.nlm.nih.gov/genbank/"
+    }
+  ],
+  "build_url": "https://github.com/hodcroftlab/coxsackievirus_a16/tree/master",
+  "colorings": [
+    {
+      "key": "gt",
+      "title": "Genotype",
+      "type": "categorical"
+    },
+    {
+      "key": "clade_assignment",
+      "title": "Clades (VP1-based)",
+      "type": "categorical"
+    },
+    {
+      "title": "Published Clades",
+      "type": "categorical",
+      "key": "subgenogroup"
+    },
+    {
+      "title": "Published Recombination Lineages",
+      "type": "categorical",
+      "key": "lineage"
+    },
+    {
+      "title": "RIVM Clades",
+      "type": "categorical",
+      "key": "RIVM_subgenogroup"
+    },
+    {
+      "key": "num_date",
+      "title": "Date",
+      "type": "continuous"
+    },
+    {
+      "key": "age_yrs",
+      "title": "Age (years)",
+      "type": "continuous",
+      "scale": [
+        [0, "#3f63cf"],
+        [0.125, "#3f63cf"],
+        [0.375, "#529ab6"],
+        [0.75, "#75b681"],
+        [3, "#a6be55"],
+        [7.5, "#d4b13f"],
+        [13.5, "#e68133"],
+        [20, "#dc2f24"]
+      ],
+      "legend": [
+        {"value": 0.125, "display": "0-3 m/o", "bounds":  [0, 0.25]},
+        {"value": 0.375, "display": "4-6 m/o", "bounds":  [0.25, 0.5]},
+        {"value":  0.75, "display": "7-12 m/o", "bounds":  [0.5, 1]},
+        {"value": 3, "display": "1-5 y/o", "bounds": [1, 5]},
+        {"value": 7.5, "display": "6-10 y/o", "bounds": [5, 10]},
+        {"value": 13.5, "display": "11-17 y/o", "bounds": [10, 17]},
+        {"value": 20, "display": "18+ y/o", "bounds": [17, 100]}
+      ]
+    },
+    {
+      "key": "med_diagnosis_all",
+      "title": "Detailed Symptom List",
+      "type": "categorical"
+    },
+    {
+      "key": "med_diagnosis_major",
+      "title": "Disease",
+      "type": "categorical"
+    },
+    {
+      "key": "country",
+      "title": "Country",
+      "type": "categorical"
+    },
+    {
+      "key": "region",
+      "title": "Region",
+      "type": "categorical"
+    },
+    {
+      "key": "place",
+      "title": "Place",
+      "type": "categorical"
+    },
+    {
+      "key": "isolation_source",
+      "title": "Isolation source",
+      "type": "categorical"
+    },
+    {
+      "title": "Gender",
+      "type": "categorical",
+      "key": "gender"
+    },
+    {
+      "title": "Date when added",
+      "type": "categorical",
+      "key": "date_added"
+    },
+    {
+      "key": "length_vp1",
+      "title": "Length of VP1",
+      "type": "continuous",
+      "scale": [
+        [0, "#3f63cf"],
+        [600, "#3f63cf"],
+        [650, "#529ab6"],
+        [700, "#75b681"],
+        [750, "#a6be55"],
+        [800, "#d4b13f"],
+        [850, "#e68133"],
+        [1000, "#dc2f24"]
+      ],
+      "legend": [
+      {"value": 600, "display": "<600nt", "bounds": [0, 600]},
+      {"value": 650, "display": "600-700nt", "bounds": [600, 700]},
+      {"value": 750, "display": "700-800nt", "bounds": [700, 800]},
+      {"value": 850, "display": "800-900nt", "bounds": [800, 900]},
+      {"value": 950, "display": ">900nt", "bounds": [900, 10000]}
+      ]
+    },
+    {
+      "key": "NCBI_length_genome",
+      "title": "NCBI-reported Length",
+      "type": "continuous"
+    },
+    {
+      "key": "abbr_authors",
+      "title": "Authors",
+      "type":"categorical"
+    }
+  ],
+  "geo_resolutions": [
+    "country",
+    "place",
+    "region"
+  ],
+  "panels": [
+     "tree",
+    "map",
+    "entropy"
+  ],
+  "display_defaults": {
+    "color_by": "clade_membership",
+    "geo_resolution": "country",
+    "distance_measure": "num_date",
+    "tip_label": "strain",
+    "map_triplicate": true
+  },
+  "metadata_columns": [
+    "strain"
+  ],
+  "filters": [
+    "country",
+    "region",
+    "author",
+    "subgenogroup", 
+    "length_vp1",
+    "med_diagnosis_major",
+    "Age available",
+    "Diagnosis available",
+    "doi"
+  ]
+  }

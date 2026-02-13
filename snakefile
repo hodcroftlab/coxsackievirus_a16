@@ -30,13 +30,13 @@ DOWNLOAD_INGEST=True
 
 ###############
 wildcard_constraints:
-    seg="vp1|whole_genome",
+    seg="vp1|whole_genome|P1",
     gene="|-5utr|-vp4|-vp2|-vp3|-vp1|-2A|-2B|-2C|-3A|-3B|-3C|-3D|-3utr"
    
 #     #from: https://bitbucket.org/snakemake/snakemake/issues/910/empty-wildcard-assignment-works-only-if
 
 # Define segments to analyze
-segments = ['vp1', 'whole-genome']
+segments = ['vp1', 'whole-genome', 'P1'] # add more segments if you want to analyze them separately
 GENES=["-5utr","-vp4", "-vp2", "-vp3", "-vp1", "-2A", "-2B", "-2C", "-3A", "-3B", "-3C", "-3D","-3utr"]
 CODING_GENES = ["VP4", "VP2", "VP3", "VP1", "2A", "2B", "2C", "3A", "3B", "3C", "3D"]
 
@@ -47,7 +47,7 @@ rule files:
         sequence_length =   "{seg}",
         dropped_strains =   "config/exclude.txt",
         incl_strains =      "config/include.txt",
-        reference =         "{seg}/config/reference_sequence.gb",
+        reference =         "config/reference_sequence.gb",
         gff_reference =     "{seg}/config/annotation.gff3",
         lat_longs =         "config/lat_longs.tsv",
         auspice_config =    "{seg}/config/auspice_config.json",
@@ -268,8 +268,8 @@ rule blast_sort:
         
     params:
         range = "{seg}",  # Determines which protein (or whole genome) is processed
-        min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400}[wildcards.seg],  # Min length
-        max_length = lambda wildcards: {"vp1": 900, "whole_genome": 8000}[wildcards.seg]  # Max length
+        min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400, "P1": 2000}[wildcards.seg],  # Min length
+        max_length = lambda wildcards: {"vp1": 900, "whole_genome": 8000, "P1": 2600}[wildcards.seg]  # Max length
     shell:
         """
         python scripts/blast_sort.py --blast {input.blast_result} \
@@ -372,14 +372,15 @@ rule filter:
         include = files.incl_strains,
     output:
         sequences = "{seg}/results/filtered.fasta",
-        reason = "{seg}/results/filter_log.tsv"
+        reason ="{seg}/results/reasons.tsv",
+    log:
+        "logs/filter.{seg}.log"
     params:
         group_by = "country year",
         sequences_per_group = 500, # set lower if you want to have a max sequences per group
         strain_id_field= config["id_field"],
-        min_date = 1950,  # G-10 was collected in 1952
-        min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400}[wildcards.seg], 
-        max_length = lambda wildcards: {"vp1": 900, "whole_genome": 8000}[wildcards.seg],  
+        min_date = 1949,  # G-10 was collected in 1952
+        min_length = lambda wildcards: {"vp1": 600, "whole_genome": 6400, "P1": 2000}[wildcards.seg], # to be safe
     shell:
         """
         augur filter \
@@ -392,9 +393,12 @@ rule filter:
             --group-by {params.group_by} \
             --sequences-per-group {params.sequences_per_group} \
             --min-date {params.min_date} \
-            --min-length {params.min_length} --max-length {params.max_length} \
+            --min-length {params.min_length} \
             --output-sequences {output.sequences}\
-            --output-log {output.reason}
+            --output-log {output.reason} \
+            >> {log} 2>&1
+
+        echo "Filtered sequences saved to {output.sequences}"
         """
 
 ##############################
@@ -502,8 +506,8 @@ rule tree:
         Creating a maximum likelihood tree
         """
     input:
-        alignment = rules.align.output.alignment,
-        # alignment = rules.sub_alignments.output.alignment
+        # alignment = rules.align.output.alignment,
+        alignment = rules.sub_alignments.output.alignment
     output:
         # tree = "{seg}/results/tree_raw.nwk"
         tree = "{seg}/results/tree_raw{gene}.nwk"
@@ -534,8 +538,8 @@ rule refine:
         """
     input:
         tree = rules.tree.output.tree,
-        alignment = rules.align.output.alignment,
-        # alignment = rules.sub_alignments.output.alignment,
+        # alignment = rules.align.output.alignment,
+        alignment = rules.sub_alignments.output.alignment,
         metadata =  rules.add_metadata.output.metadata,
     output:
         # tree = "{seg}/results/tree.nwk",
@@ -545,7 +549,7 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 8, # was 3
+        clock_filter_iqd = 4, # was 3
         strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
@@ -580,14 +584,18 @@ rule ancestral:
     message: "Reconstructing ancestral sequences and mutations"
     input:
         tree = rules.refine.output.tree,
-        alignment = rules.align.output.alignment,
-        # alignment = rules.sub_alignments.output.alignment,
+        alignment = rules.sub_alignments.output.alignment,
+        # alignment = rules.align.output.alignment,
         annotation = rules.extract.output.extracted_genbank,
     output:
         node_data = "{seg}/results/muts{gene}.json",
     params:
         inference = "joint",
-        genes = lambda wildcards: "VP1" if wildcards.seg == "vp1" else (wildcards.gene.replace("-", "", 1).upper() if wildcards.gene else CODING_GENES), 
+        genes = lambda wildcards: (
+            CODING_GENES if wildcards.seg == "whole_genome" 
+            else [wildcards.seg.upper()] if not wildcards.gene
+            else []
+        ),
         translation_template= r"{seg}/results/translations/cds_%GENE.translation.fasta",
         output_translation_template=r"{seg}/results/translations/cds_%GENE.ancestral.fasta",
         root = "{seg}/results/ancestral_sequences.fasta",

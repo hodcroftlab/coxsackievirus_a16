@@ -1,0 +1,92 @@
+LOCUS       CAU05876                2586 bp    RNA              UNK 14-OCT-1994
+DEFINITION  P1 gene sequence (Coxsackievirus A16, Coxsackievirus A16 (CV-A16),
+            14-OCT-1994, Accession: U05876.1, Version: 1).
+ACCESSION   U05876.1
+VERSION     U05876.1
+KEYWORDS    .
+SOURCE      Coxsackievirus A16 (CV-A16)
+  ORGANISM  Coxsackievirus A16
+            .
+FEATURES             Location/Qualifiers
+     CDS             1..207
+                     /ID="id-AAA50478.1:1..69"
+                     /gbkey="Prot"
+                     /product="VP4"
+                     /Name="VP4"
+                     /locus_tag="VP4"
+     CDS             208..969
+                     /ID="id-AAA50478.1:70..323"
+                     /gbkey="Prot"
+                     /product="VP2"
+                     /Name="VP2"
+                     /locus_tag="VP2"
+     CDS             970..1695
+                     /ID="id-AAA50478.1:324..565"
+                     /gbkey="Prot"
+                     /product="VP3"
+                     /Name="VP3"
+                     /locus_tag="VP3"
+     CDS             1696..2586
+                     /ID="id-AAA50478.1:566..862"
+                     /gbkey="Prot"
+                     /product="VP1"
+                     /Name="VP1"
+                     /locus_tag="VP1"
+     CDS             1..2586
+                     /Note="P1; capsid protein precursor"
+                     /gbkey="Prot"
+                     /product="P1"
+                     /Name="P1"
+                     /locus_tag="P1"
+     source          1..2586
+                     /organism="Coxsackievirus A16"
+                     /mol_type="genomic RNA"
+                     /strain="G-10"
+                     /host="Homo sapiens"
+                     /db_xref="taxon:31704"
+ORIGIN
+        1 atggggtcac aagtctcaac ccaacgatcg ggttcccacg aaaattcgaa ctcagcatca
+       61 gaaggatcta ctataaacta caccaccatc aactattaca aggatgcata tgctgccagc
+      121 gcgggtcgcc aagatatgtc tcaggaccct aagaaattta cagaccctgt gatggatgtc
+      181 atacacgaga tggctcctcc cttgaaatca cccagtgctg aagcttgtgg ttatagtgat
+      241 cgagttgccc aactcacaat tggaaactcc acaatcacta cacaagaagc tgcaaacatt
+      301 ataatagcat atggggaatg gcccgagtat tgcaaggacg ctgatgccac agctgttgac
+      361 aagcccacca gacccgatgt gtcggtaaat aggttcttca cccttgatac taaatcgtgg
+      421 gctaaagact cgaagggatg gtactggaaa ttcccggacg ttttgacgga ggtgggcgtg
+      481 tttgggcaga atgcgcaatt ccattatctg tatagatccg gattctgtgt gcacgtgcag
+      541 tgcaatgcca gcaaattcca ccagggtgct ctcttggttg ccatactgcc tgagtacgtg
+      601 ctgggcacca ttgccggggg cgatggtaac gagaactcac atcccccgta cgtcaccacc
+      661 cagccaggac aggtgggtgc tgtacttaca aatccttatg ttttggatgc tggggtaccc
+      721 cttagtcaat tgacggtgtg tccgcatcag tggattaacc tacgaaccaa caactgtgcg
+      781 accatcatag taccatacat gaatactgta ccattcgatt cggccctaaa ccattgcaac
+      841 tttggcttaa ttgtagtgcc cgtagtacca ctcgacttta acgctggagc tacatcagaa
+      901 ataccaataa ctgtcaccat cgcacccatg tgcgctgaat ttgcaggttt gcgacaggca
+      961 atcaaacagg ggatacctac cgagttgaag cccggtacta atcagtttct cactactgat
+     1021 gatggtgtct cagctcccat tttgcccgga ttccacccta ctccagccat acacatacct
+     1081 ggtgaagtgc gcaatctgtt ggagatttgc agggtagaga ccatattgga ggtgaacaat
+     1141 ctacagagta atgagacaac ccccatgcaa cgactatgct tccctgtctc ggtgcagagt
+     1201 aagacggggg aattgtgtgc tgtttttagg gccgaccctg gtaggaatgg accgtggcag
+     1261 tcgactattt taggacagtt gtgtaggtac tatactcaat ggtctggatc tctggaagtc
+     1321 actttcatgt ttgctggatc gttcatggca acaggaaaga tgctaatcgc atacacacct
+     1381 ccggggggtg gggtcccagc agatcggctc actgcaatgc tgggaaccca tgtgatatgg
+     1441 gattttggcc tccaatcctc agtcacgcta gttataccat ggataagcaa cacacactat
+     1501 agggcgcacg ccaaggacgg ttattttgat tattacacca ctggcacgat cactatatgg
+     1561 tatcagacaa attatgtcgt acctattgga gcccccacaa cagcctatat tgtggccctc
+     1621 gcagccgctc aggacaactt taccatgaaa ctgtgcaaag acactgagga tattgagcaa
+     1681 tctgcaaaca tccagggtga tggaattgca gacatgattg accaggctgt cacttcccga
+     1741 gttggtcgtg cgctgacatc cttacaggta gaacctaccg ccgccaacac caatgctagt
+     1801 gagcacagat tgggcaccgg gctcgtcccc gccttgcagg ctgcagagac cggcgcctct
+     1861 tctaatgcac aggatgagaa tcttatagaa acccggtgtg tgttgaacca tcactccact
+     1921 caagagacca cgattggcaa ctttttcagt cgagcaggac tagtgagtat tattaccatg
+     1981 cccaccacag gtacccaaaa caccgatggg tatgtgaact gggatattga cttgatgggt
+     2041 tatgctcaaa tgaggcgtaa gtgtgagcta ttcacataca tgcgctttga tgcagagttt
+     2101 acatttgtag ctgccaaacc aaacggtgag ctagtaccac aattgttgca gtacatgtat
+     2161 gtgcctcccg gagctccaaa acctacgtcc cgggattcct ttgcctggca gactgctacc
+     2221 aatccttcca tcttcgtcaa gttgactgac cccccggcac aagtgtcagt acccttcatg
+     2281 tctcccgcca gcgcctacca gtggttttac gatggctatc caacgtttgg agcccatcca
+     2341 caatcgaatg acgcagacta tggccaatgt ccaaacaaca tgatgggcac ctttagcatc
+     2401 agaactgtag gcactgagaa atccccccat tctatcaccc ttcgggtgta tatgagaatc
+     2461 aagcatgtca gggcctggat accccggcca ctcagaaacc aaccgtacct ttttaagaca
+     2521 aatccaaatt ataaaggcaa cgacatcaaa tgcaccagca caagtaggga caaaataaca
+     2581 acacta
+//

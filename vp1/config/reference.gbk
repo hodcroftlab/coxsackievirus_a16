@@ -8,27 +8,12 @@ SOURCE      Coxsackievirus A16 (CV-A16)
   ORGANISM  Coxsackievirus A16
             .
 FEATURES             Location/Qualifiers
-     source          1..891
-                     /organism="Coxsackievirus A16"
-                     /mol_type="genomic RNA"
-                     /strain="G-10"
-                     /host="Homo sapiens"
-                     /db_xref="taxon:31704"
-     gene            <1..>891
-                     /gene="VP1"
-     CDS             <1..>891
+     CDS             1..891
                      /ID="id-AAA50478.1:566..862"
                      /gbkey="Prot"
                      /product="VP1"
-                     /codon_start=1
                      /Name="VP1"
                      /locus_tag="VP1"
-                     /translation="GDGIADMIDQAVTSRVGRALTSLQVEPTAANTNASEHRLGTGLVP
-                     ALQAAETGASSNAQDENLIETRCVLNHHSTQETTIGNFFSRAGLVSIITMPTTGTQNTD
-                     GYVNWDIDLMGYAQMRRKCELFTYMRFDAEFTFVAAKPNGELVPQLLQYMYVPPGAPKP
-                     TSRDSFAWQTATNPSIFVKLTDPPAQVSVPFMSPASAYQWFYDGYPTFGAHPQSNDADY
-                     GQCPNNMMGTFSIRTVGTEKSPHSITLRVYMRIKHVRAWIPRPLRNQPYLFKTNPNYKG
-                     NDIKCTSTSRDKITTL"
      source          1..891
                      /organism="Coxsackievirus A16"
                      /mol_type="genomic RNA"
@@ -43,12 +28,12 @@ ORIGIN
       241 ggcaactttt tcagtcgagc aggactagtg agtattatta ccatgcccac cacaggtacc
       301 caaaacaccg atgggtatgt gaactgggat attgacttga tgggttatgc tcaaatgagg
       361 cgtaagtgtg agctattcac atacatgcgc tttgatgcag agtttacatt tgtagctgcc
-      421 aaaccaaacg gtgagctagt accacaattt gttgcagtac atgtatgtgc ctcccggagc
-      481 tccaaaacct acgtcccggg attcctttgc ctggcagact gctaccaatt cttccatctt
-      541 cgtcaagttg actgaccccc cggcacaagt gtcagtaccc ttcatgtctc ccgccagcgc
-      601 ctaccagtgg ttttacgatg gctatccaac gtttggagcc catccacaat cgaatgacgc
-      661 agactatggc caatgtccaa acaacatgat gggcaccttt agcatcagaa ctgtaggcac
-      721 tgagaaatcc cccattctat cacccttcgg gtgtatatga gaatcaagca tgtcagggcc
-      781 tggatacccc ggcctctcag aaaccaacca taccttttta agacaaatcc aaattataaa
+      421 aaaccaaacg gtgagctagt accacaattg ttgcagtaca tgtatgtgcc tcccggagct
+      481 ccaaaaccta cgtcccggga ttcctttgcc tggcagactg ctaccaatcc ttccatcttc
+      541 gtcaagttga ctgacccccc ggcacaagtg tcagtaccct tcatgtctcc cgccagcgcc
+      601 taccagtggt tttacgatgg ctatccaacg tttggagccc atccacaatc gaatgacgca
+      661 gactatggcc aatgtccaaa caacatgatg ggcaccttta gcatcagaac tgtaggcact
+      721 gagaaatccc cccattctat cacccttcgg gtgtatatga gaatcaagca tgtcagggcc
+      781 tggatacccc ggccactcag aaaccaaccg taccttttta agacaaatcc aaattataaa
       841 ggcaacgaca tcaaatgcac cagcacaagt agggacaaaa taacaacact a
 //

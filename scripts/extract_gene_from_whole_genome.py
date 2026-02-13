@@ -53,7 +53,7 @@ def extract_protein(genbank_file, output_fasta, product_name, output_genbank, ou
                     nucleotide_sequence = feature.location.extract(record.seq)
 
                     with open(output_fasta, "w") as output_handle:
-                        output_handle.write(f">{product_name}\n{nucleotide_sequence}\n")
+                        output_handle.write(f">{accession} {product_name}\n{nucleotide_sequence}\n")
                     print(f"Protein {product_name} saved to {output_fasta}")
                     
                     extracted_record = record[feature.location.start:feature.location.end]

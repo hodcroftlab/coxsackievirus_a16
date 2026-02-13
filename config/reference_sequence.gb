@@ -104,6 +104,24 @@ FEATURES             Location/Qualifiers
                      /product="3'UTR"
                      /Name="3UTR"
                      /locus_tag="3UTR"
+     CDS             751..3336
+                     /Note="P1; capsid protein precursor"
+                     /gbkey="Prot"
+                     /product="P1"
+                     /Name="P1"
+                     /locus_tag="P1"
+     CDS             3337..5070
+                     /Note="P2; capsid protein precursor"
+                     /gbkey="Prot"
+                     /product="P2"
+                     /Name="P2"
+                     /locus_tag="P2"
+     CDS             5071..7329
+                     /Note="P3; capsid protein precursor"
+                     /gbkey="Prot"
+                     /product="P3"
+                     /Name="P3"
+                     /locus_tag="P3"
 ORIGIN
         1 ttaaaacagc ctgtgggttg tacccaccca cagggcccac tgggcgctag cactctgatt
        61 ctacggaatc cttgtgcgcc tgttttatgt cccttccccc aatcagtaac ttagaagcat
