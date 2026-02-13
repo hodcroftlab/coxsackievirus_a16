@@ -1,5 +1,4 @@
 #reference strain G-10
-U05876 
 E11655
 
 #very high diversity (genotype A)

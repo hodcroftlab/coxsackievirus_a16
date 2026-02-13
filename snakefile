@@ -446,7 +446,7 @@ rule align:
         --min-match-length {params.min_match_length} \
         --allowed-mismatches {params.allowed_mismatches} \
         --min-length {params.min_length} \
-        --include-reference true \
+        --include-reference false \
         --output-tsv {output.tsv} \
         --output-translations "{wildcards.seg}/results/translations/cds_{{cds}}.translation.fasta" \
         --output-fasta {output.alignment}
@@ -549,7 +549,7 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 4, # was 3
+        clock_filter_iqd = 10, # was 3
         strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
