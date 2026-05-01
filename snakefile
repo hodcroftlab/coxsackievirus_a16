@@ -246,7 +246,7 @@ rule extract:
 rule blast:
     input: 
         blast_db_file = rules.extract.output.extracted_fasta,  
-        seqs_to_blast = rules.fetch.output.sequences
+        seqs_to_blast = rules.update_sequences.output.sequences,
     output:
         blast_out = "temp/{seg}/blast_out.csv"
     params:
@@ -262,7 +262,7 @@ rule blast:
 rule blast_sort:
     input:
         blast_result = rules.blast.output.blast_out, # output blast (for your protein)
-        input_seqs = rules.fetch.output.sequences
+        input_seqs = rules.update_sequences.output.sequences,
     output:
         sequences = "{seg}/results/sequences.fasta"
         
