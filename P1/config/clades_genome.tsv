@@ -1,0 +1,32 @@
+clade	gene	site	alt
+A	nuc	1664	T
+
+B	nuc	2330	A
+
+F	nuc	1188	C
+F	nuc	1665	T
+F	nuc	2007	G
+
+C	nuc	951	T
+C	nuc	1389	C
+C	nuc	2010	G
+
+B1	nuc	519	T
+B1	nuc	1773	A
+B1	nuc	1050	T
+
+B1a	nuc	747	C
+B1a	nuc	330	T
+B1a	nuc	2538	G
+B1a	nuc	2403	A
+
+B1b	nuc	933	C
+B1b	nuc	1755	G
+B1b	nuc	1971	C
+
+B1c	nuc	1206	T
+B1c	nuc	2413	G
+
+D	nuc	1017	A
+D	nuc	1383	A
+D	nuc	2226	C
