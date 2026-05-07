@@ -7,24 +7,17 @@ C	nuc	558	C
 C	nuc	678	T
 C	nuc	309	G
 
-B	nuc	162	G
-
 B1	nuc	577	C
 B1	nuc	444	C
-
-B2	nuc	559	C
-B2	nuc	679	T
-
-B3	nuc	312	G
-B3	nuc	577	A
 
 B1a	nuc	198	G
 B1a	nuc	276	C
 B1a	nuc	669	C
 
 B1b	clade	B1
-B1b	nuc	60	G
-B1b	nuc	276	C
+B1b	nuc	66	G
+B1b	nuc	669	C
+B1b	nuc	378	T
 
 B1c	nuc	126	C
 B1c	nuc	186	C
@@ -39,3 +32,7 @@ F	nuc	654	C
 E	nuc	261	A
 E	nuc	373	C
 E	nuc	657	T
+
+A	nuc	132	C
+A	nuc	537	C
+A	nuc	658	G

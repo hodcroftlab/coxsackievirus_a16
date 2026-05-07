@@ -81,7 +81,7 @@ rule next_update:
     """Final rule to generate all required JSON outputs for a monthly run"""
     input:
         expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments),
-        expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=["-vp1", "-3D"]),
+        # expand("auspice/coxsackievirus_A16_gene_{genes}.json", genes=["-vp1", "-3D"]),
 
     threads: workflow.cores
 
@@ -186,11 +186,11 @@ rule update_sequences:
         metadata = files.METADATA,
         extra_metadata = rules.curate.output.meta
     output:
-        sequences = "data/all_sequences.fasta"
-    params:
-        file_ending = "data/*.fas*",
+        sequences = "data/all_sequences.fasta",
         date_last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
+    params:
+        file_ending = "data/*.fas*",
     shell:
         """
         set -euo pipefail
@@ -206,8 +206,8 @@ rule update_sequences:
         # Concatenate ingest sequences + any additional fasta files (if present)
         cat {input.sequences} {params.file_ending} > "$tmp"
 
-        python scripts/update_sequences.py --in_seq "$tmp" --dates {params.date_last_updated} \
-            --local_accession {params.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
+        python scripts/update_sequences.py --in_seq "$tmp" --dates {output.date_last_updated} \
+            --local_accession {output.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
             --ingest_seqs {input.sequences} --out_seq {output.sequences}
 
         # Deduplicate FASTA headers (keep first occurrence) and atomically replace
@@ -294,10 +294,10 @@ rule add_metadata:
         metadata = files.METADATA,
         new_data = rules.curate.output.meta,
         regions = ancient(files.regions),
-    params:
-        strain_id_field = config["id_field"],
         last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
+    params:
+        strain_id_field = config["id_field"],
     output:
         metadata="data/all_metadata.tsv"
     shell:
@@ -305,8 +305,8 @@ rule add_metadata:
         python scripts/add_metadata.py \
             --input {input.metadata} \
             --add {input.new_data} \
-            --local {params.local_accn} \
-            --update {params.last_updated}\
+            --local {input.local_accn} \
+            --update {input.last_updated}\
             --regions {input.regions} \
             --id {params.strain_id_field} \
             --output {output.metadata}
@@ -549,7 +549,7 @@ rule refine:
     params:
         coalescent = "opt",
         date_inference = "marginal",
-        clock_filter_iqd = 10, # was 3
+        clock_filter_iqd = lambda w: 11 if getattr(w, "seg", "") == "vp1" else 3,
         strain_id_field = config["id_field"],
         clock_rate = 0.0039, # estimated with clockor: VP1 = 3.882 x 10^-3, WHOLE-GENOME = 4.033 x 10^-3
         clock_std_dev = 0.0015
@@ -826,15 +826,15 @@ rule clean:
 rule upload: ## make sure you're logged in to Nextstrain
     message: "Uploading auspice JSONs to Nextstrain"
     input:
-        # jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
-        jsons = ["auspice/coxsackievirus_A16_vp1.json", "auspice/coxsackievirus_A16_whole-genome.json",
-                 "auspice/coxsackievirus_A16_gene_-vp1.json", "auspice/coxsackievirus_A16_gene_-3D.json"]
+        jsons = expand("auspice/coxsackievirus_A16_{segs}.json", segs=segments)
     params:
         remote_group=REMOTE_GROUP,
         date=UPLOAD_DATE,
+        USERNAME=os.getenv("NEXTSTRAIN_REMOTE_USERNAME"),
+
     shell:
         """
-        nextstrain login
+        nextstrain login --username {params.USERNAME}
         nextstrain remote upload \
             nextstrain.org/groups/{params.remote_group}/ \
             {input.jsons}
