@@ -12,7 +12,6 @@ ingest/logs/
 */results/
 */temp/
 ingest/data/*.*
-auspice/*
 
 *.code-workspace
 
