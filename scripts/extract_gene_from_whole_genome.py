@@ -6,7 +6,7 @@ import argparse
 from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 import re
-import ipdb
+# import ipdb
 
 def parse_args():
     parser = argparse.ArgumentParser()
