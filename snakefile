@@ -187,14 +187,15 @@ rule update_sequences:
         extra_metadata = rules.curate.output.meta
     output:
         sequences = "data/all_sequences.fasta",
+    params:
+        strain_id_field=config["id_field"],
+        file_ending = "data/*.fas*",
+        temp = temp("temp/sequences.fasta"),
         date_last_updated = files.last_updated_file,
         local_accn = files.local_accn_file,
-    params:
-        file_ending = "data/*.fas*",
     shell:
         """
         set -euo pipefail
-        # use bash nullglob so missing globs are ignored
         shopt -s nullglob
 
         mkdir -p temp
@@ -206,8 +207,8 @@ rule update_sequences:
         # Concatenate ingest sequences + any additional fasta files (if present)
         cat {input.sequences} {params.file_ending} > "$tmp"
 
-        python scripts/update_sequences.py --in_seq "$tmp" --dates {output.date_last_updated} \
-            --local_accession {output.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
+        python scripts/update_sequences.py --in_seq "$tmp" --dates {params.date_last_updated} \
+            --local_accession {params.local_accn} --meta {input.metadata} --add {input.extra_metadata} \
             --ingest_seqs {input.sequences} --out_seq {output.sequences}
 
         # Deduplicate FASTA headers (keep first occurrence) and atomically replace
@@ -830,7 +831,7 @@ rule upload: ## make sure you're logged in to Nextstrain
     params:
         remote_group=REMOTE_GROUP,
         date=UPLOAD_DATE,
-        USERNAME=os.getenv("NEXTSTRAIN_REMOTE_USERNAME"),
+        USERNAME=os.getenv("NEXTSTRAIN_USERNAME"),
 
     shell:
         """
