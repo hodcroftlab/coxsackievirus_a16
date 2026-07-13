@@ -8,6 +8,8 @@ nextstrain_upload/
 ingest/.snakemake/
 ingest/benchmarks/
 ingest/logs/
+ingest/results
+ingest/data/nextclade_data
 
 */results/
 */temp/
