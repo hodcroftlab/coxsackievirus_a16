@@ -18,8 +18,8 @@
       "type": "categorical"
     },
     {
-      "key": "clade_assignment",
-      "title": "Clades (VP1-based)",
+      "key": "nextclade_clade",
+      "title": "Nextclade Clades",
       "type": "categorical"
     },
     {
@@ -134,7 +134,7 @@
       "type": "continuous"
     },
     {
-      "key": "abbr_authors",
+      "key": "author",
       "title": "Authors",
       "type":"categorical"
     }

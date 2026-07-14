@@ -39,6 +39,7 @@ wildcard_constraints:
 segments = ['vp1', 'whole-genome', 'P1'] # add more segments if you want to analyze them separately
 GENES=["-5utr","-vp4", "-vp2", "-vp3", "-vp1", "-2A", "-2B", "-2C", "-3A", "-3B", "-3C", "-3D","-3utr"]
 CODING_GENES = ["VP4", "VP2", "VP3", "VP1", "2A", "2B", "2C", "3A", "3B", "3C", "3D"]
+PROTEIN1 = ["VP4", "VP2", "VP3", "VP1"]
 
 
 # Rule to handle configuration files
@@ -52,6 +53,7 @@ rule files:
         lat_longs =         "config/lat_longs.tsv",
         auspice_config =    "{seg}/config/auspice_config.json",
         colors =            "config/colors.tsv",
+        color_schemes =     "config/color_schemes.tsv",
         clades =            "{seg}/config/clades_genome.tsv",
         regions=            "config/geo_regions.tsv",
         meta_public=        "data/meta_public.tsv",
@@ -582,7 +584,12 @@ rule refine:
 
 
 rule ancestral:
-    message: "Reconstructing ancestral sequences and mutations"
+    message: 
+        """
+        Reconstructing ancestral sequences and mutations
+
+        Segment: {wildcards.seg}
+        """
     input:
         tree = rules.refine.output.tree,
         alignment = rules.sub_alignments.output.alignment,
@@ -593,43 +600,31 @@ rule ancestral:
     params:
         inference = "joint",
         genes = lambda wildcards: (
-            CODING_GENES if wildcards.seg == "whole_genome" 
-            else [wildcards.seg.upper()] if not wildcards.gene
+            CODING_GENES if wildcards.seg == "whole_genome"
+            else PROTEIN1 if wildcards.seg == "P1"
+            else "VP1" if wildcards.seg == "vp1"
             else []
-        ),
+        ),        
         translation_template= r"{seg}/results/translations/cds_%GENE.translation.fasta",
         output_translation_template=r"{seg}/results/translations/cds_%GENE.ancestral.fasta",
         root = "{seg}/results/ancestral_sequences.fasta",
-
-    run:
-        # Check if this is for a specific gene (wildcards.gene is not empty)
-        if wildcards.gene != "":
-            # Running for a specific gene
-            shell("""
-                augur ancestral \
-                --tree {input.tree} \
-                --alignment {input.alignment} \
-                --output-node-data {output.node_data} \
-                --keep-ambiguous \
-                --inference {params.inference}
-            """)
-        else:
-            # Running for whole genome with translation
-            shell("""
-                augur ancestral \
-                --tree {input.tree} \
-                --alignment {input.alignment} \
-                --annotation {input.annotation} \
-                --genes {params.genes} \
-                --translations {params.translation_template} \
-                --output-node-data {output.node_data} \
-                --output-translations {params.output_translation_template} \
-                --output-sequences {params.root} \
-                --skip-validation
-            """)
-
-            # --root-sequence {input.annotation} \  -> assigns mutations to the root relative to the reference, not wanted here
-
+    log:
+        "logs/ancestral.{seg}{gene}.log"
+    shell:
+        """
+            augur ancestral \
+            --tree {input.tree} \
+            --alignment {input.alignment} \
+            --annotation {input.annotation} \
+            --genes {params.genes} \
+            --translations {params.translation_template} \
+            --output-node-data {output.node_data} \
+            --output-translations {params.output_translation_template} \
+            --output-sequences {params.root} \
+            > {log} 2>&1
+        """
+        # --keep-ambiguous\ #do not infer nucleotides at ambiguous (N) sites on tip sequences (leave as N).
+        # --root-sequence {input.annotation} \  -> assigns mutations to the root relative to the reference, not wanted here
 
 ##############################
 # Clade assignment
@@ -672,6 +667,59 @@ rule traits:
             --output-node-data {output.node_data} \
             --columns {params.traits} \
             --confidence
+        """
+
+
+rule get_dates:
+    """Create ordering for color assignment"""
+    input:
+        metadata = rules.add_metadata.output.metadata,
+    output:
+        ordering = "temp/color_ordering.tsv"
+    run:
+        import pandas as pd
+        column = "date_added"
+        meta = pd.read_csv(input.metadata, delimiter='\t')
+
+        if column not in meta.columns:
+            print(f"The column '{column}' does not exist in the file.")
+            sys.exit(1)
+
+        deflist = meta[column].dropna().tolist()
+        # Store unique values (ordered)
+        deflist = sorted(set(deflist))
+        if "XXXX-XX-XX" in deflist:
+            deflist.remove("XXXX-XX-XX")
+
+        result_df = pd.DataFrame({
+            'column': [column] * len(deflist),
+            'value': deflist
+        })
+
+        result_df.to_csv(output.ordering, sep='\t', index=False, header=False)
+
+### Colors for Dates
+rule colors:
+    """Assign colors based on ordering"""
+    input:
+        ordering = rules.get_dates.output.ordering,
+        color_schemes = files.color_schemes,
+        colors = files.colors,
+    params:
+        column = "date_added"
+    output:
+        colors="config/colors_dates.tsv",
+        final_colors="config/final_colors.tsv"
+    shell:
+        """
+        python3 scripts/assign-colors.py \
+            --ordering {input.ordering} \
+            --color-schemes {input.color_schemes} \
+            --output {output.colors}
+
+        echo -e '\n{params.column}\tXXXX-XX-XX\t#a6acaf' >> {output.colors}
+
+        cat {output.colors} {input.colors} >> {output.final_colors}
         """
 
 rule clade_published:
@@ -729,9 +777,6 @@ rule clade_published:
         merged_df = pd.merge(merged_df, len_df, left_on=params.strain_id_field, right_on="accession", how="left")
         final_meta = pd.merge(merged_df, rivm_subtypes, on=params.strain_id_field, how='left')
 
-        # add url with genbank accession
-        final_meta['url'] = "https://www.ncbi.nlm.nih.gov/nuccore/" + final_meta['accession']
-
         final_meta.rename(columns={"has_age":"Age available"}, inplace=True)
         final_meta.rename(columns={"has_diagnosis":"Diagnosis available"}, inplace=True)
         
@@ -751,7 +796,7 @@ rule export:
         traits = rules.traits.output.node_data,
         muts = rules.ancestral.output.node_data,
         clades = rules.clades.output.clade_data,
-        colors = files.colors,
+        colors = rules.colors.output.final_colors,
         lat_longs = files.lat_longs,
         auspice_config = files.auspice_config
     params:

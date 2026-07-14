@@ -108,6 +108,7 @@ curate:
     "location",
     "length",
     "host",
+    "sample_type",
     "date_released",
     "date_updated",
     "sra_accessions",
