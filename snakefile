@@ -859,7 +859,10 @@ rule clean:
             "ingest/data/*.*",
             "temp/*",
             "logs/*",
-            "benchmark/*",
+            "ingest/benchmarks",
+            "ingest/logs",
+            "ingest/results",
+            "benchmark/*"
             "data/fetch/*",
         ]
     shell: 

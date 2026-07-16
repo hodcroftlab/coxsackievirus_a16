@@ -21,8 +21,8 @@ rule all:
         """
 
 
-include: "workflow/rules/fetch_from_ncbi.smk"
-include: "workflow/rules/curate.smk"
-include: "workflow/rules/sort.smk"
+include: "rules/fetch_from_ncbi.smk"
+include: "rules/curate.smk"
+include: "rules/sort.smk"
 
 
